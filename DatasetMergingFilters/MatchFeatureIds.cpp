@@ -318,7 +318,7 @@ void MatchFeatureIds::execute()
   std::sort(featureOverlaps.begin(), featureOverlaps.end());
 
   // create map of moving to reference grains
-  std::vector<int32_t> idMap(maxMovingId+1, 0);
+  std::vector<size_t> idMap(maxMovingId+1, 0);
 
   // begin assigning grains by overlap until (i) all moving grains have been assigned or (ii) overlapping pairs are exhausted
   std::vector<bool> referenceAssigned(maxReferenceId+1, false);
@@ -387,171 +387,21 @@ void MatchFeatureIds::execute()
     m_MovingFeatureIds[i]=idMap[m_MovingFeatureIds[i]];
   }
 
-  // resize and rearrange moving feature attributes
+  // resize and rearrange moving feature attribute arrays
   QVector<size_t> tDims(1,index+1);
   VolumeDataContainer* m = getDataContainerArray()->getDataContainerAs<VolumeDataContainer>(getCellFeatureAttributeMatrixPath().getDataContainerName());
   AttributeMatrix::Pointer cellFeatureAttrMat = m->getAttributeMatrix(getCellFeatureAttributeMatrixPath().getAttributeMatrixName());
- 
-  DataArray<int32_t>::Pointer oldIds = DataArray<int32_t>::CreateArray(maxReferenceId+1, "old_ids");
-  for(int i=0; i<=maxReferenceId; i++)
-  {
-    oldIds->setValue(i, i);
-  }
-  cellFeatureAttrMat->addAttributeArray(oldIds->getName(), oldIds);  
-
-
   cellFeatureAttrMat->setTupleDimensions(tDims);
 
-
   QList<QString> featureArrayNames = cellFeatureAttrMat->getAttributeArrayNameList();
+  idMap.resize(tDims[0],0);
+  QVector<size_t> newOrder = QVector<size_t>::fromStdVector(idMap);
   for(QList<QString>::iterator iter = featureArrayNames.begin(); iter != featureArrayNames.end(); ++iter)
   {
-    IDataArray::Pointer p = cellFeatureAttrMat->getAttributeArray(*iter);
-
-    if(boost::dynamic_pointer_cast<DataArray<bool> >(p).get() != NULL)
-    {
-      DataArray<bool>::Pointer pOld = cellFeatureAttrMat->getArray<DataArray<bool> >(*iter);
-      DataArray<bool>::Pointer pNew = boost::dynamic_pointer_cast<DataArray<bool> >(pOld->deepCopy());
-      for(int i=0; i<=maxMovingId; i++)
-      {
-        pNew->setValue(idMap[i], pOld->getValue(i));
-      }
-      cellFeatureAttrMat->removeAttributeArray(*iter);
-      cellFeatureAttrMat->addAttributeArray(pNew->getName(), pNew);
-    }
-    else if(boost::dynamic_pointer_cast<DataArray<unsigned char> >(p).get() != NULL)
-    {
-      DataArray<unsigned char>::Pointer pOld = cellFeatureAttrMat->getArray<DataArray<unsigned char> >(*iter);
-      DataArray<unsigned char>::Pointer pNew = boost::dynamic_pointer_cast<DataArray<unsigned char> >(pOld->deepCopy());
-      for(int i=0; i<=maxMovingId; i++)
-      {
-        pNew->setValue(idMap[i], pOld->getValue(i));
-      }
-      cellFeatureAttrMat->removeAttributeArray(*iter);
-      cellFeatureAttrMat->addAttributeArray(pNew->getName(), pNew);
-    }
-    else if(boost::dynamic_pointer_cast<DataArray<int8_t> >(p).get() != NULL)
-    {
-      DataArray<int8_t>::Pointer pOld = cellFeatureAttrMat->getArray<DataArray<int8_t> >(*iter);
-      DataArray<int8_t>::Pointer pNew = boost::dynamic_pointer_cast<DataArray<int8_t> >(pOld->deepCopy());
-      for(int i=0; i<=maxMovingId; i++)
-      {
-        pNew->setValue(idMap[i], pOld->getValue(i));
-      }
-      cellFeatureAttrMat->removeAttributeArray(*iter);
-      cellFeatureAttrMat->addAttributeArray(pNew->getName(), pNew);
-    }
-    else if(boost::dynamic_pointer_cast<DataArray<uint8_t> >(p).get() != NULL)
-    {
-      DataArray<uint8_t>::Pointer pOld = cellFeatureAttrMat->getArray<DataArray<uint8_t> >(*iter);
-      DataArray<uint8_t>::Pointer pNew = boost::dynamic_pointer_cast<DataArray<uint8_t> >(pOld->deepCopy());
-      for(int i=0; i<=maxMovingId; i++)
-      {
-        pNew->setValue(idMap[i], pOld->getValue(i));
-      }
-      cellFeatureAttrMat->removeAttributeArray(*iter);
-      cellFeatureAttrMat->addAttributeArray(pNew->getName(), pNew);
-    }
-    else if(boost::dynamic_pointer_cast<DataArray<int16_t> >(p).get() != NULL)
-    {
-      DataArray<int16_t>::Pointer pOld = cellFeatureAttrMat->getArray<DataArray<int16_t> >(*iter);
-      DataArray<int16_t>::Pointer pNew = boost::dynamic_pointer_cast<DataArray<int16_t> >(pOld->deepCopy());
-      for(int i=0; i<=maxMovingId; i++)
-      {
-        pNew->setValue(idMap[i], pOld->getValue(i));
-      }
-      cellFeatureAttrMat->removeAttributeArray(*iter);
-      cellFeatureAttrMat->addAttributeArray(pNew->getName(), pNew);
-    }
-    else if(boost::dynamic_pointer_cast<DataArray<uint16_t> >(p).get() != NULL)
-    {
-      DataArray<uint16_t>::Pointer pOld = cellFeatureAttrMat->getArray<DataArray<uint16_t> >(*iter);
-      DataArray<uint16_t>::Pointer pNew = boost::dynamic_pointer_cast<DataArray<uint16_t> >(pOld->deepCopy());
-      for(int i=0; i<=maxMovingId; i++)
-      {
-        pNew->setValue(idMap[i], pOld->getValue(i));
-      }
-      cellFeatureAttrMat->removeAttributeArray(*iter);
-      cellFeatureAttrMat->addAttributeArray(pNew->getName(), pNew);
-    }
-    else if(boost::dynamic_pointer_cast<DataArray<int32_t> >(p).get() != NULL)
-    {
-      DataArray<int32_t>::Pointer pOld = cellFeatureAttrMat->getArray<DataArray<int32_t> >(*iter);
-      DataArray<int32_t>::Pointer pNew = boost::dynamic_pointer_cast<DataArray<int32_t> >(pOld->deepCopy());
-      for(int i=0; i<=maxMovingId; i++)
-      {
-        pNew->setValue(idMap[i], pOld->getValue(i));
-      }
-      cellFeatureAttrMat->removeAttributeArray(*iter);
-      cellFeatureAttrMat->addAttributeArray(pNew->getName(), pNew);
-    }
-    else if(boost::dynamic_pointer_cast<DataArray<uint32_t> >(p).get() != NULL)
-    {
-      DataArray<uint32_t>::Pointer pOld = cellFeatureAttrMat->getArray<DataArray<uint32_t> >(*iter);
-      DataArray<uint32_t>::Pointer pNew = boost::dynamic_pointer_cast<DataArray<uint32_t> >(pOld->deepCopy());
-      for(int i=0; i<=maxMovingId; i++)
-      {
-        pNew->setValue(idMap[i], pOld->getValue(i));
-      }
-      cellFeatureAttrMat->removeAttributeArray(*iter);
-      cellFeatureAttrMat->addAttributeArray(pNew->getName(), pNew);
-    }
-    else if(boost::dynamic_pointer_cast<DataArray<int64_t> >(p).get() != NULL)
-    {
-      DataArray<int64_t>::Pointer pOld = cellFeatureAttrMat->getArray<DataArray<int64_t> >(*iter);
-      DataArray<int64_t>::Pointer pNew = boost::dynamic_pointer_cast<DataArray<int64_t> >(pOld->deepCopy());
-      for(int i=0; i<=maxMovingId; i++)
-      {
-        pNew->setValue(idMap[i], pOld->getValue(i));
-      }
-      cellFeatureAttrMat->removeAttributeArray(*iter);
-      cellFeatureAttrMat->addAttributeArray(pNew->getName(), pNew);
-    }
-    else if(boost::dynamic_pointer_cast<DataArray<uint64_t> >(p).get() != NULL)
-    {
-      DataArray<uint64_t>::Pointer pOld = cellFeatureAttrMat->getArray<DataArray<uint64_t> >(*iter);
-      DataArray<uint64_t>::Pointer pNew = boost::dynamic_pointer_cast<DataArray<uint64_t> >(pOld->deepCopy());
-      for(int i=0; i<=maxMovingId; i++)
-      {
-        pNew->setValue(idMap[i], pOld->getValue(i));
-      }
-      cellFeatureAttrMat->removeAttributeArray(*iter);
-      cellFeatureAttrMat->addAttributeArray(pNew->getName(), pNew);
-    }
-    else if(boost::dynamic_pointer_cast<DataArray<float> >(p).get() != NULL)
-    {
-      DataArray<float>::Pointer pOld = cellFeatureAttrMat->getArray<DataArray<float> >(*iter);
-      DataArray<float>::Pointer pNew = boost::dynamic_pointer_cast<DataArray<float> >(pOld->deepCopy());
-      for(int i=0; i<=maxMovingId; i++)
-      {
-        pNew->setValue(idMap[i], pOld->getValue(i));
-      }
-      cellFeatureAttrMat->removeAttributeArray(*iter);
-      cellFeatureAttrMat->addAttributeArray(pNew->getName(), pNew);
-    }
-    else if(boost::dynamic_pointer_cast<DataArray<double> >(p).get() != NULL)
-    {
-      DataArray<double>::Pointer pOld = cellFeatureAttrMat->getArray<DataArray<double> >(*iter);
-      DataArray<double>::Pointer pNew = boost::dynamic_pointer_cast<DataArray<double> >(pOld->deepCopy());
-      for(int i=0; i<=maxMovingId; i++)
-      {
-        pNew->setValue(idMap[i], pOld->getValue(i));
-      }
-      cellFeatureAttrMat->removeAttributeArray(*iter);
-      cellFeatureAttrMat->addAttributeArray(pNew->getName(), pNew);
-    }
-    else if(boost::dynamic_pointer_cast<DataArray<size_t> >(p).get() != NULL)
-    {
-      DataArray<size_t>::Pointer pOld = cellFeatureAttrMat->getArray<DataArray<size_t> >(*iter);
-      DataArray<size_t>::Pointer pNew = boost::dynamic_pointer_cast<DataArray<size_t> >(pOld->deepCopy());
-      for(int i=0; i<=maxMovingId; i++)
-      {
-        pNew->setValue(idMap[i], pOld->getValue(i));
-      }
-      cellFeatureAttrMat->removeAttributeArray(*iter);
-      cellFeatureAttrMat->addAttributeArray(pNew->getName(), pNew);
-    }
-    
+    IDataArray::Pointer pOld = cellFeatureAttrMat->getAttributeArray(*iter);
+    IDataArray::Pointer pNew = pOld->reorderCopy(newOrder);
+    cellFeatureAttrMat->removeAttributeArray(*iter);
+    cellFeatureAttrMat->addAttributeArray(pNew->getName(), pNew);
   }
 
   /* Let the GUI know we are done with this filter */
