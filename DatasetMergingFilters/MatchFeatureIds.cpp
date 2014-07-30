@@ -34,10 +34,12 @@ MatchFeatureIds::MatchFeatureIds() :
   m_MovingCrystalStructuresArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellEnsembleAttributeMatrixName, DREAM3D::EnsembleData::CrystalStructures),
   m_UseOrientations(false),
   m_OrientationTolerance(5.0f),
-  m_Metric(1),  
+  m_Metric(1),
+  m_MetricThreshold(0.1f),
   m_CellFeatureAttributeMatrixPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellFeatureAttributeMatrixName, "")
 /* DO NOT FORGET TO INITIALIZE ALL YOUR DREAM3D Filter Parameters HERE */
 {
+  m_OrientationOps = OrientationOps::getOrientationOpsVector();
   setupFilterParameters();
 }
 
@@ -57,7 +59,7 @@ void MatchFeatureIds::setupFilterParameters()
   parameters.push_back(FilterParameter::New("Reference Feature Ids", "ReferenceFeatureIdsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferenceFeatureIdsArrayPath(), false, ""));
   parameters.push_back(FilterParameter::New("Moving Feature Ids", "MovingFeatureIdsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getMovingFeatureIdsArrayPath(), false, ""));
   parameters.push_back(FilterParameter::New("Moving Cell Attribute Matrix", "CellFeatureAttributeMatrixPath", FilterParameterWidgetType::AttributeMatrixSelectionWidget, getCellFeatureAttributeMatrixPath(), false));
-
+  
   QVector<QString> choices;
     choices.push_back("Jaccard");
     choices.push_back("Sorensen-Dice");
@@ -68,6 +70,7 @@ void MatchFeatureIds::setupFilterParameters()
     parameter->setWidgetType(FilterParameterWidgetType::ChoiceWidget);
     parameter->setChoices(choices);
   parameters.push_back(parameter);
+  parameters.push_back(FilterParameter::New("Minimum Metric Value", "MetricThreshold", FilterParameterWidgetType::DoubleWidget, getMetricThreshold(), false, ""));
 
   QStringList linkedProps;
   linkedProps<<"OrientationTolerance"<<"ReferenceQuatsArrayPath"<<"ReferencePhasesArrayPath"<<"ReferenceCrystalStructuresArrayPath"<<"MovingQuatsArrayPath"<<"MovingPhasesArrayPath"<<"MovingCrystalStructuresArrayPath";
@@ -93,6 +96,7 @@ void MatchFeatureIds::readFilterParameters(AbstractFilterParametersReader* reade
   setCellFeatureAttributeMatrixPath( reader->readDataArrayPath("CellFeatureAttributeMatrixPath", getCellFeatureAttributeMatrixPath() ) );
   
   setMetric( reader->readValue("Metric", getMetric()) );
+  setMetricThreshold( reader->readValue("MetricThreshold", getMetricThreshold() ) );
 
   setUseOrientations(reader->readValue("UseOrientations", getUseOrientations() ) );
   setOrientationTolerance(reader->readValue("OrientationTolerance", getOrientationTolerance() ) );
@@ -116,6 +120,7 @@ int MatchFeatureIds::writeFilterParameters(AbstractFilterParametersWriter* write
   DREAM3D_FILTER_WRITE_PARAMETER(CellFeatureAttributeMatrixPath)
 
   DREAM3D_FILTER_WRITE_PARAMETER(Metric)
+  DREAM3D_FILTER_WRITE_PARAMETER(MetricThreshold)
   
   DREAM3D_FILTER_WRITE_PARAMETER(UseOrientations)
   DREAM3D_FILTER_WRITE_PARAMETER(OrientationTolerance)
@@ -311,7 +316,7 @@ void MatchFeatureIds::execute()
             overlapPair.index = (float)overlap/sqrt(movingVolumes[i]*movingVolumes[i]+referenceVolumes[j]*referenceVolumes[j]);
           } break;
         }
-        featureOverlaps.push_back(overlapPair);
+        if(overlapPair.index>=m_MetricThreshold) featureOverlaps.push_back(overlapPair);
       }
     }
   }
@@ -323,10 +328,11 @@ void MatchFeatureIds::execute()
   // begin assigning grains by overlap until (i) all moving grains have been assigned or (ii) overlapping pairs are exhausted
   std::vector<bool> referenceAssigned(maxReferenceId+1, false);
   std::vector<bool> movingAssigned(maxMovingId+1, false);
+  float orientationTolerance = m_OrientationTolerance*DREAM3D::Constants::k_Pi/180.0f;
   int assignedGrains = 0;
   while(assignedGrains<maxMovingId && featureOverlaps.size()>0)
   {
-    //get last pair (highest jaccard index / most overlap)
+    //get last pair (highest index / most overlap)
     int referenceId = featureOverlaps.back().referenceId;
     int movingId = featureOverlaps.back().movingId;
     bool assign = false;
@@ -334,16 +340,16 @@ void MatchFeatureIds::execute()
     {
       if(m_UseOrientations)
       {
-        int referencePhase = m_ReferencePhases[referenceId];
-        int movingPhase = m_MovingPhases[movingId];
-        if(referencePhase==movingPhase)
+        int referencePhase = m_ReferenceCrystalStructures[m_ReferencePhases[referenceId]];
+        int movingPhase = m_MovingCrystalStructures[m_MovingPhases[movingId]];
+        if(referencePhase==movingPhase && referencePhase!=Ebsd::CrystalStructure::UnknownCrystalStructure)
         {
           float w, n1, n2, n3;
           QuatF q1, q2;
           QuaternionMathF::Copy(reference_quats[referenceId], q1);
           QuaternionMathF::Copy(moving_quats[movingId], q2);
           w = m_OrientationOps[referencePhase]->getMisoQuat( q1, q2, n1, n2, n3);
-          if(w<=m_OrientationTolerance)
+          if(w<=orientationTolerance)
           {
             assign=true;
           }

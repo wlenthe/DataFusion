@@ -43,6 +43,9 @@ class MatchFeatureIds : public AbstractFilter
 
     DREAM3D_FILTER_PARAMETER(int, Metric)
     Q_PROPERTY(int Metric READ getMetric WRITE setMetric)
+    
+    DREAM3D_FILTER_PARAMETER(float, MetricThreshold)
+    Q_PROPERTY(float MetricThreshold READ getMetricThreshold WRITE setMetricThreshold)
 
 
     DREAM3D_FILTER_PARAMETER(bool, UseOrientations)
