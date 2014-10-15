@@ -10,6 +10,8 @@
 #include "DREAM3DLib/Common/DREAM3DSetGetMacros.h"
 #include "DREAM3DLib/Common/AbstractFilter.h"
 
+#include "DREAM3DLib/OrientationOps/OrientationOps.h"
+
 
 /**
  * @class RegisterOrientations RegisterOrientations.h DatasetMerging/DatasetMergingFilters/RegisterOrientations.h
@@ -32,15 +34,44 @@ class RegisterOrientations : public AbstractFilter
     /* Place your input parameters here using the DREAM3D macros to declare the Filter Parameters
      * or other instance variables
      */
-    //DREAM3D_FILTER_PARAMETER(QString, ImagePrefix)
-    /* If you declare a filter parameter above then you MUST create a Q_PROPERTY for that FilterParameter */
-    //Q_PROPERTY(QString ImagePrefix READ getImagePrefix WRITE setImagePrefix)
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceAvgQuatsArrayPath)
+    Q_PROPERTY(DataArrayPath ReferenceAvgQuatsArrayPath READ getReferenceAvgQuatsArrayPath WRITE setReferenceAvgQuatsArrayPath)
 
-    /* Here is another example of declaring an integer FilterParameter */
-    // DREAM3D_FILTER_PARAMETER(int, ImageSize)
-    // Q_PROPERTY(int ImageSize READ getImageSize WRITE setImageSize)
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingAvgQuatsArrayPath)
+    Q_PROPERTY(DataArrayPath MovingAvgQuatsArrayPath READ getMovingAvgQuatsArrayPath WRITE setMovingAvgQuatsArrayPath)
 
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceGoodFeaturesArrayPath)
+    Q_PROPERTY(DataArrayPath ReferenceGoodFeaturesArrayPath READ getReferenceGoodFeaturesArrayPath WRITE setReferenceGoodFeaturesArrayPath)
 
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingGoodFeaturesArrayPath)
+    Q_PROPERTY(DataArrayPath MovingGoodFeaturesArrayPath READ getMovingGoodFeaturesArrayPath WRITE setMovingGoodFeaturesArrayPath)
+
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferencePhasesArrayPath)
+    Q_PROPERTY(DataArrayPath ReferencePhasesArrayPath READ getReferencePhasesArrayPath WRITE setReferencePhasesArrayPath)
+
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingPhasesArrayPath)
+    Q_PROPERTY(DataArrayPath MovingPhasesArrayPath READ getMovingPhasesArrayPath WRITE setMovingPhasesArrayPath)
+
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceCrystalStructuresArrayPath)
+    Q_PROPERTY(DataArrayPath ReferenceCrystalStructuresArrayPath READ getReferenceCrystalStructuresArrayPath WRITE setReferenceCrystalStructuresArrayPath)
+
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingCrystalStructuresArrayPath)
+    Q_PROPERTY(DataArrayPath MovingCrystalStructuresArrayPath READ getMovingCrystalStructuresArrayPath WRITE setMovingCrystalStructuresArrayPath)
+
+    // DREAM3D_FILTER_PARAMETER(DataArrayPath, EnsemblePath)
+    // Q_PROPERTY(DataArrayPath EnsemblePath READ getEnsemblePath WRITE setEnsemblePath)
+
+    // DREAM3D_FILTER_PARAMETER(QString, TransformName)
+    // Q_PROPERTY(QString TransformName READ getTransformName WRITE setTransformName)
+
+    DREAM3D_FILTER_PARAMETER(bool, WriteOutputs)
+    Q_PROPERTY(bool WriteOutputs READ getWriteOutputs WRITE setWriteOutputs)
+
+    DREAM3D_FILTER_PARAMETER(QString, OutputFile)
+    Q_PROPERTY(QString OutputFile READ getOutputFile WRITE setOutputFile)
+
+    DREAM3D_FILTER_PARAMETER(double, MinMiso)
+    Q_PROPERTY(double MinMiso READ getMinMiso WRITE setMinMiso)
 
     /**
      * @brief getCompiledLibraryName Returns the name of the Library that this filter is a part of
@@ -143,6 +174,17 @@ class RegisterOrientations : public AbstractFilter
      * make sure you have all the variables defined correctly. Those are "DEFINE_REQUIRED_DATAARRAY_VARIABLE()"
      * and  DEFINE_CREATED_DATAARRAY_VARIABLE() which are defined in DREAM3DGetSetMacros.h
      */
+      DEFINE_REQUIRED_DATAARRAY_VARIABLE(float, ReferenceAvgQuats)
+      DEFINE_REQUIRED_DATAARRAY_VARIABLE(float, MovingAvgQuats)
+      DEFINE_REQUIRED_DATAARRAY_VARIABLE(bool, ReferenceGoodFeatures)
+      DEFINE_REQUIRED_DATAARRAY_VARIABLE(bool, MovingGoodFeatures)
+      DEFINE_REQUIRED_DATAARRAY_VARIABLE(int32_t, ReferencePhases)
+      DEFINE_REQUIRED_DATAARRAY_VARIABLE(int32_t, MovingPhases)
+      DEFINE_REQUIRED_DATAARRAY_VARIABLE(unsigned int, ReferenceCrystalStructures)
+      DEFINE_REQUIRED_DATAARRAY_VARIABLE(unsigned int, MovingCrystalStructures)
+      DEFINE_CREATED_DATAARRAY_VARIABLE(float, Transform)
+
+      QVector<OrientationOps::Pointer> m_OrientationOps;
 
     RegisterOrientations(const RegisterOrientations&); // Copy Constructor Not Implemented
     void operator=(const RegisterOrientations&); // Operator '=' Not Implemented
