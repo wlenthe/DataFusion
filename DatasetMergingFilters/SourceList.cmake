@@ -15,6 +15,7 @@ START_FILTER_GROUP(${DatasetMerging_BINARY_DIR} "${_filterGroupName}" "DatasetMe
 set(_PublicFilters
   MergeDatasets
   RegisterOrientations
+  RegisterPointSets
   MatchFeatureIds
   GenerateDatasetMisorientationColors
 
