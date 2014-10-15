@@ -74,7 +74,7 @@ void MatchFeatureIds::setupFilterParameters()
 
   QStringList linkedProps;
   linkedProps<<"OrientationTolerance"<<"ReferenceQuatsArrayPath"<<"ReferencePhasesArrayPath"<<"ReferenceCrystalStructuresArrayPath"<<"MovingQuatsArrayPath"<<"MovingPhasesArrayPath"<<"MovingCrystalStructuresArrayPath";
-  parameters.push_back(FilterParameter::NewConditional("Require Orientation Match", "UseOrientations", FilterParameterWidgetType::LinkedBooleanWidget, getUseOrientations(), false, linkedProps));
+  parameters.push_back(LinkedBooleanFilterParameter::New("Require Orientation Match", "UseOrientations", getUseOrientations(), linkedProps, false));
   parameters.push_back(FilterParameter::New("Orientation Tolerance Angle (degrees)", "OrientationTolerance", FilterParameterWidgetType::DoubleWidget, getOrientationTolerance(), false, ""));
   parameters.push_back(FilterParameter::New("Reference Features Average Quats", "ReferenceQuatsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferenceQuatsArrayPath(), false, ""));
   parameters.push_back(FilterParameter::New("Reference Features Phases", "ReferencePhasesArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferencePhasesArrayPath(), false, ""));
