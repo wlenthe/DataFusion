@@ -4,38 +4,137 @@
 
 #include "MergeDatasets.h"
 
+#ifdef DREAM3D_USE_PARALLEL_ALGORITHMS
+#include <tbb/parallel_for.h>
+#include <tbb/blocked_range3d.h>
+#include <tbb/partitioner.h>
+#include <tbb/task_scheduler_init.h>
+#endif
+
 #include <QtCore/QString>
 
+#include <Eigen/Dense>
+
 #include "DatasetMerging/DatasetMergingConstants.h"
+
+#if (CMP_SIZEOF_SIZE_T == 4)
+  typedef int32_t DimType;
+#else
+  typedef int64_t DimType;
+#endif
+
+class MergeDatasetsImpl
+{
+
+  public:
+    MergeDatasetsImpl(DimType* movingDims, DimType* referenceDims, float* movingOrign, float* referenceOrign, float* movingSpacing, float* referenceSpacing, Eigen::Matrix3f transform, Eigen::Vector3f translation, AttributeMatrix::Pointer movingAttMatt, AttributeMatrix::Pointer fixedAttMatt, QString prefix, int64_t* newIndicies) :
+    m_movingDims(movingDims),
+    m_movingOrigin(movingOrign),
+    m_movingResolution(movingSpacing),
+    m_referenceDims(referenceDims),
+    m_referenceOrigin(referenceOrign),
+    m_referenceResolution(referenceSpacing),
+    m_Transfomration(transform),
+    m_Translation(translation),
+    m_Prefix(prefix),
+    m_movingAtrMatPtr(movingAttMatt),
+    m_referenceAtrMatPtr(fixedAttMatt),
+    m_newIndicies(newIndicies)
+    {}
+    virtual ~MergeDatasetsImpl() {}
+
+    void convert(size_t zStart, size_t zEnd, size_t yStart, size_t yEnd, size_t xStart, size_t xEnd) const
+    {
+      //vector to hold "good" pairs (ones that map inside the moving dataset)
+      std::vector< std::pair<int,int> > indexMap;
+      for (size_t k = zStart; k < zEnd; k++)
+      {
+        int64_t ktot = m_referenceDims[0] * m_referenceDims[1] * k;
+        for (size_t j = yStart; j < yEnd; j++)
+        {
+          int64_t jtot = m_referenceDims[0] * j;
+          for (size_t i = xStart; i < xEnd; i++)
+          {
+            //reference index -> reference position
+            Eigen::Vector3f referencePosition;
+            referencePosition<< i * m_referenceResolution[0] + m_referenceOrigin[0], j * m_referenceResolution[1] + m_referenceOrigin[1], k * m_referenceResolution[2] + m_referenceOrigin[2];
+            
+            //reference position -> moving position
+            Eigen::Vector3f movingPosition = m_Transfomration * referencePosition + m_Translation;
+
+            //moving position -> nearest moving index;
+            int xIndex = std::round( ( movingPosition(0) - m_movingOrigin[0] ) / m_movingResolution[0] );
+            int yIndex = std::round( ( movingPosition(1) - m_movingOrigin[1] ) / m_movingResolution[1] );
+            int zIndex = std::round( ( movingPosition(2) - m_movingOrigin[2] ) / m_movingResolution[2] );
+
+            //make sure this is in bounds on the moving dataset
+            if( xIndex >= 0 && yIndex >= 0 && zIndex >= 0 && xIndex < m_movingDims[0] && yIndex < m_movingDims[1] && zIndex < m_movingDims[2] )
+            {
+              //compute indicies + copy
+              int movingIndex = zIndex * m_movingDims[1] * m_movingDims[0] + yIndex * m_movingDims[0] + xIndex;
+              int fixedIndex = ktot + jtot + i;
+              m_newIndicies[fixedIndex] = movingIndex;
+            }
+            else
+            {
+              //leave as -1
+            }
+          }
+        }
+      }
+    }
+
+#ifdef DREAM3D_USE_PARALLEL_ALGORITHMS
+    void operator()(const tbb::blocked_range3d<size_t, size_t, size_t>& r) const
+    {
+      convert(r.pages().begin(), r.pages().end(), r.rows().begin(), r.rows().end(), r.cols().begin(), r.cols().end());
+    }
+#endif
+
+  private:
+    DimType* m_movingDims;
+    float* m_movingOrigin;
+    float* m_movingResolution;
+    DimType* m_referenceDims;
+    float* m_referenceOrigin;
+    float* m_referenceResolution;
+    Eigen::Matrix3f m_Transfomration;
+    Eigen::Vector3f m_Translation;
+    QString m_Prefix;
+    AttributeMatrix::Pointer m_movingAtrMatPtr;
+    AttributeMatrix::Pointer m_referenceAtrMatPtr;
+    int64_t* m_newIndicies;
+
+};
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
 MergeDatasets::MergeDatasets() :
   AbstractFilter(),
-  m_UseTranslation(true),
-  m_UseRotation(false),
-  m_RotationAngle(0),
-  m_UseScaling(false),
-  m_UseShearing(false)
-/* DO NOT FORGET TO INITIALIZE ALL YOUR DREAM3D Filter Parameters HERE */
+  m_ReferenceCellAttributeMatrixArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, ""),
+  m_MovingCellAttributeMatrixArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, ""),
+  m_Prefix("merged_")
 {
-  m_TranslationParameters.x = 0.0f;
-  m_TranslationParameters.y = 0.0f;
-  m_TranslationParameters.z = 0.0f;
+  m_Row1.a = 1.0f;
+  m_Row1.b = 0.0f;
+  m_Row1.c = 0.0f;
+  m_Row1.d = 0.0f;
+  
+  m_Row2.a = 0.0f;
+  m_Row2.b = 1.0f;
+  m_Row2.c = 0.0f;
+  m_Row2.d = 0.0f;
+  
+  m_Row3.a = 0.0f;
+  m_Row3.b = 0.0f;
+  m_Row3.c = 1.0f;
+  m_Row3.d = 0.0f;
 
-  m_RotationAxis.x = 0.0f;
-  m_RotationAxis.y = 0.0f;
-  m_RotationAxis.z = 1.0f;
-
-  m_ScalingParamters.x = 100.0f;
-  m_ScalingParamters.y = 100.0f;
-  m_ScalingParamters.z = 100.0f;
-
-  m_ShearingParameters.x = 0.0f;
-  m_ShearingParameters.y = 0.0f;
-  m_ShearingParameters.z = 0.0f;
-
+  m_Row4.a = 0.0f;
+  m_Row4.b = 0.0f;
+  m_Row4.c = 0.0f;
+  m_Row4.d = 1.0f;
   setupFilterParameters();
 }
 
@@ -52,27 +151,18 @@ MergeDatasets::~MergeDatasets()
 void MergeDatasets::setupFilterParameters()
 {
   FilterParameterVector parameters;
+  parameters.push_back(FilterParameter::New("Reference Cell Attribute Matrix", "ReferenceCellAttributeMatrixArrayPath", FilterParameterWidgetType::AttributeMatrixSelectionWidget, getReferenceCellAttributeMatrixArrayPath(), false));
+  parameters.push_back(FilterParameter::New("Moving Cell Attribute Matrix", "MovingCellAttributeMatrixArrayPath", FilterParameterWidgetType::AttributeMatrixSelectionWidget, getMovingCellAttributeMatrixArrayPath(), false));
+  parameters.push_back(FilterParameter::New("Array Prefix", "Prefix", FilterParameterWidgetType::StringWidget, getPrefix(), true, ""));
+  parameters.push_back(FilterParameter::New("Affine Transform", "", FilterParameterWidgetType::SeparatorWidget, "", false));
+  parameters.push_back(FilterParameter::New("", "Row1", FilterParameterWidgetType::FloatVec4Widget, getRow1(), false));
+  parameters.push_back(FilterParameter::New("", "Row2", FilterParameterWidgetType::FloatVec4Widget, getRow2(), false));
+  parameters.push_back(FilterParameter::New("", "Row3", FilterParameterWidgetType::FloatVec4Widget, getRow3(), false));
 
-  parameters.push_back(FilterParameter::New("Allowed Transformations (Degrees of Freedom)", "", FilterParameterWidgetType::SeparatorWidget, "", false));
-  QStringList rigidLinkedProps("TranslationParameters");
-  parameters.push_back(FilterParameter::NewConditional("Translation", "UseTranslation", FilterParameterWidgetType::LinkedBooleanWidget, getUseTranslation(), false, rigidLinkedProps));
-  parameters.push_back(FilterParameter::New("Translation Amounts", "TranslationParameters", FilterParameterWidgetType::FloatVec3Widget, getTranslationParameters(), false));
+  FilterParameter::Pointer param = FilterParameter::New("", "Row4", FilterParameterWidgetType::FloatVec4Widget, getRow4(), false);
+  param->setReadOnly(true);
+  parameters.push_back(param);
 
-  QStringList rotationLinkedProps;
-  rotationLinkedProps<<"RotationAxis"<<"RotationAngle";
-  parameters.push_back(FilterParameter::NewConditional("Rotation", "UseRotation", FilterParameterWidgetType::LinkedBooleanWidget, getUseRotation(), false, rotationLinkedProps));
-  parameters.push_back(FilterParameter::New("Rotation Axis", "RotationAxis", FilterParameterWidgetType::FloatVec3Widget, getRotationAxis(), false));
-  parameters.push_back(FilterParameter::New("Rotation Angle", "RotationAngle", FilterParameterWidgetType::DoubleWidget, getRotationAngle(), false));
-
-  QStringList scalingLinkedProps("ScalingParamters");
-  // parameters.push_back(FilterParameter::NewConditional("Similarity", "UseGoodVoxels", FilterParameterWidgetType::LinkedBooleanWidget, getUseGoodVoxels(), false, linkedProps));
-  parameters.push_back(FilterParameter::NewConditional("Scaling", "UseScaling", FilterParameterWidgetType::LinkedBooleanWidget, getUseScaling(), false, scalingLinkedProps));
-  parameters.push_back(FilterParameter::New("Scaling Amounts", "ScalingParamters", FilterParameterWidgetType::FloatVec3Widget, getScalingParamters(), false));
-
-  QStringList shearingLinkedProps("ShearingParameters");
-  parameters.push_back(FilterParameter::NewConditional("Shearing", "UseShearing", FilterParameterWidgetType::LinkedBooleanWidget, getUseShearing(), false, shearingLinkedProps));
-  parameters.push_back(FilterParameter::New("Shearing Amounts", "ShearingParameters", FilterParameterWidgetType::FloatVec3Widget, getShearingParameters(), false));
-  
   setFilterParameters(parameters);
 }
 
@@ -82,19 +172,13 @@ void MergeDatasets::setupFilterParameters()
 void MergeDatasets::readFilterParameters(AbstractFilterParametersReader* reader, int index)
 {
   reader->openFilterGroup(this, index);
-
-  setUseTranslation(reader->readValue("UseTranslation", getUseTranslation() ) );
-  setTranslationParameters( reader->readFloatVec3("TranslationParameters", getTranslationParameters() ) );
-
-  setUseRotation(reader->readValue("UseRotation", getUseRotation() ) );
-  setRotationAxis( reader->readFloatVec3("RotationAxis", getRotationAxis() ) );
-  setRotationAngle( reader->readValue("RotationAngle", getRotationAngle() ) );
-
-  setUseScaling(reader->readValue("UseScaling", getUseScaling() ) );
-  setScalingParamters( reader->readFloatVec3("ScalingParamters", getScalingParamters() ) );
-
-  setUseShearing(reader->readValue("UseShearing", getUseShearing() ) );
-  setShearingParameters( reader->readFloatVec3("ShearingParameters", getShearingParameters() ) );
+  setReferenceCellAttributeMatrixArrayPath( reader->readDataArrayPath("ReferenceCellAttributeMatrixArrayPath", getReferenceCellAttributeMatrixArrayPath() ) );
+  setMovingCellAttributeMatrixArrayPath( reader->readDataArrayPath("MovingCellAttributeMatrixArrayPath", getMovingCellAttributeMatrixArrayPath() ) );
+  setPrefix( reader->readString("Prefix", getPrefix() ) );
+  setRow1( reader->readFloatVec4("Row1", getRow1() ) );
+  setRow2( reader->readFloatVec4("Row2", getRow2() ) );
+  setRow3( reader->readFloatVec4("Row3", getRow3() ) );
+  setRow4( reader->readFloatVec4("Row4", getRow4() ) );
 
   reader->closeFilterGroup();
 }
@@ -105,15 +189,13 @@ void MergeDatasets::readFilterParameters(AbstractFilterParametersReader* reader,
 int MergeDatasets::writeFilterParameters(AbstractFilterParametersWriter* writer, int index)
 {
   writer->openFilterGroup(this, index);
-  DREAM3D_FILTER_WRITE_PARAMETER(UseTranslation)
-  DREAM3D_FILTER_WRITE_PARAMETER(TranslationParameters)
-  DREAM3D_FILTER_WRITE_PARAMETER(UseRotation)
-  DREAM3D_FILTER_WRITE_PARAMETER(RotationAxis)
-  DREAM3D_FILTER_WRITE_PARAMETER(RotationAngle)
-  DREAM3D_FILTER_WRITE_PARAMETER(UseScaling)
-  DREAM3D_FILTER_WRITE_PARAMETER(ScalingParamters)
-  DREAM3D_FILTER_WRITE_PARAMETER(UseShearing)
-  DREAM3D_FILTER_WRITE_PARAMETER(ShearingParameters)
+  DREAM3D_FILTER_WRITE_PARAMETER(ReferenceCellAttributeMatrixArrayPath)
+  DREAM3D_FILTER_WRITE_PARAMETER(MovingCellAttributeMatrixArrayPath)
+  DREAM3D_FILTER_WRITE_PARAMETER(Prefix)
+  DREAM3D_FILTER_WRITE_PARAMETER(Row1)
+  DREAM3D_FILTER_WRITE_PARAMETER(Row2)
+  DREAM3D_FILTER_WRITE_PARAMETER(Row3)
+  DREAM3D_FILTER_WRITE_PARAMETER(Row4)
   writer->closeFilterGroup();
   return ++index; // we want to return the next index that was just written to
 }
@@ -125,39 +207,106 @@ void MergeDatasets::dataCheck()
 {
   setErrorCondition(0);
 
-  /* Example code for preflighting looking for a valid string for the output file
-   * but not necessarily the fact that the file exists: Example code to make sure
-   * we have something in a string before proceeding.*/
-  /*
-  if (m_OutputFile.empty() == true)
+  if(0 != m_Row4.a || 0 != m_Row4.b || 0 != m_Row4.c || 1 != m_Row4.d )
   {
-    QString ss = QObject::tr("Output file name was not set").arg(getHumanLabel());
-    setErrorCondition(-1);
-    notifyErrorMessage(getHumanLabel(), ss, -1);
-    return;
+    notifyErrorMessage(getHumanLabel(), "'Final row of affine transform must be 0 0 0 1", -5);
   }
-  * We can also check for the availability of REQUIRED ARRAYS:
-  * QVector<size_t> dims(1, 1);
-  * // Assigns the shared_ptr<> to an instance variable that is a weak_ptr<>
-  * m_CellPhasesPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<int32_t>, AbstractFilter>(this, getCellPhasesArrayPath(), dims);
-  *  // Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object
-  * if( NULL != m_CellPhasesPtr.lock().get() )
-  * {
-  *   // Now assign the raw pointer to data from the DataArray<T> object
-  *   m_CellPhases = m_CellPhasesPtr.lock()->getPointer(0);
-  * }
-  *
-  * We can also CREATE a new array to dump new data into
-  *   tempPath.update(m_CellEulerAnglesArrayPath.getDataContainerName(), m_CellEulerAnglesArrayPath.getAttributeMatrixName(), getCellIPFColorsArrayName() );
-  * // Assigns the shared_ptr<> to an instance variable that is a weak_ptr<>
-  * m_CellIPFColorsPtr = getDataContainerArray()->createNonPrereqArrayFromPath<DataArray<uint8_t>, AbstractFilter, uint8_t>(this, tempPath, 0, dims);
-  * // Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object
-  * if( NULL != m_CellIPFColorsPtr.lock().get() )
-  * {
-  * // Now assign the raw pointer to data from the DataArray<T> object
-  * m_CellIPFColors = m_CellIPFColorsPtr.lock()->getPointer(0);
-  * }
-  */
+
+  //this filter will copy all arrays from 1 attribute matrix to another make sure they show up in pipeline
+  AttributeMatrix::Pointer refCellAttrMat = getDataContainerArray()->getPrereqAttributeMatrixFromPath<DataContainer, AbstractFilter>(this, getReferenceCellAttributeMatrixArrayPath(), -303);
+  if(getErrorCondition() < 0 || NULL == refCellAttrMat.get() ) { return; }
+
+  AttributeMatrix::Pointer moveCellAttrMat = getDataContainerArray()->getPrereqAttributeMatrixFromPath<DataContainer, AbstractFilter>(this, getMovingCellAttributeMatrixArrayPath(), -303);
+  if(getErrorCondition() < 0 || NULL == moveCellAttrMat.get() ) { return; }
+
+  //make sure we're transforming between 2 3d arrays
+  if(3 != refCellAttrMat->getTupleDimensions().size() )
+  {
+    notifyErrorMessage(getHumanLabel(), "'Reference Cell Attribute Matrix' must be 3 dimensional", -1000);
+  }
+  if(3 != moveCellAttrMat->getTupleDimensions().size() )
+  {
+    notifyErrorMessage(getHumanLabel(), "'Moving Cell Attribute Matrix' must be 3 dimensional", -1000);
+  }
+
+  //loop over attribute arrays of moving, copying to source
+  QList<QString> movingArrays = moveCellAttrMat->getAttributeArrayNameList();  
+  size_t numTuples = refCellAttrMat->getNumTuples();
+  for(int i = 0; i < movingArrays.size(); i++)
+  {
+    //create name in reference attr. mat
+    QString newName = getPrefix() + movingArrays[i];
+
+    //check for name conflict
+    if(refCellAttrMat->doesAttributeArrayExist(newName))
+    {
+      QString ss = QObject::tr("The selected prefix '%1' creates a name conflict between the 'Reference Cell Attribute Matrix' array '%2' and the 'Moving Cell Attribute Matrix' array '%3'. Please select a different prefix").arg(m_Prefix).arg(newName).arg(movingArrays[i]);
+      setErrorCondition(-1001);
+      notifyErrorMessage(getHumanLabel(), ss, getErrorCondition());
+      return;
+    }
+
+    //get moving array
+    IDataArray::Pointer movingArrPtr = moveCellAttrMat->getAttributeArray(movingArrays[i]);
+    if(movingArrPtr.get() != NULL)
+    {
+      //add equivilent array to reference attr. mat with new name
+      IDataArray::Pointer newFixedArray = movingArrPtr->createNewArray(numTuples, movingArrPtr->getComponentDimensions(), newName, true);
+      refCellAttrMat->addAttributeArray(newName, newFixedArray);    
+    }
+    else
+    {
+      //this should never happen since we're getting names from the attribute array
+      QString ss = QObject::tr("The array '%1' does not exist in the 'Moving Cell Attribute Matrix; but is expected").arg(movingArrays[i]);
+      setErrorCondition(-1002);
+      notifyErrorMessage(getHumanLabel(), ss, getErrorCondition());
+      return;
+    }
+  }
+
+  //if the 2 attribute matricies belong to different data containers, also copy all other attribute matricies (so feature + ensemble data carry over)
+  if( 0 != getReferenceCellAttributeMatrixArrayPath().getDataContainerName().compare(getMovingCellAttributeMatrixArrayPath().getDataContainerName()) )
+  {
+    //get both data containers
+    DataContainer* refDataContainer = getDataContainerArray()->getPrereqDataContainer<DataContainer, AbstractFilter>(this, getReferenceCellAttributeMatrixArrayPath().getDataContainerName());
+    if(getErrorCondition() < 0 || NULL == refDataContainer ) { return; }
+
+    DataContainer* moveDataContainer = getDataContainerArray()->getPrereqDataContainer<DataContainer, AbstractFilter>(this, getMovingCellAttributeMatrixArrayPath().getDataContainerName());
+    if(getErrorCondition() < 0 || NULL == moveDataContainer ) { return; }
+
+    //loop over moving attribute matricies
+    QList<QString> movingAttMatList = moveDataContainer->getAttributeMatrixNameList();
+    for(int i = 0; i < movingAttMatList.size(); i++)
+    {
+      //dont copy cell array, its arrays are being copied into an existing attribute matrix
+      if( 0 != movingAttMatList[i].compare(getMovingCellAttributeMatrixArrayPath().getAttributeMatrixName()))
+      {
+        QString newName = getPrefix() + movingAttMatList[i];
+        if(refDataContainer->doesAttributeMatrixExist(newName))
+        {
+          QString ss = QObject::tr("The selected prefix '%1' creates a name conflict between the 'Reference Cell Data Container' attribute matrix '%2' and the 'Moving Cell Data Container' attribute matrix '%3'. Please select a different prefix").arg(m_Prefix).arg(newName).arg(movingAttMatList[i]);
+          setErrorCondition(-1002);
+          notifyErrorMessage(getHumanLabel(), ss, getErrorCondition());
+          return;
+        }
+        
+        AttributeMatrix::Pointer movingAtrMatPtr = moveDataContainer->getAttributeMatrix(movingAttMatList[i]);
+        if(movingAtrMatPtr.get() != NULL)
+        {
+          //add to reference attr. mat with new name
+          refDataContainer->addAttributeMatrix(newName, movingAtrMatPtr);
+        }
+        else
+        {
+          //this should never happen since we're getting names from the data container
+          QString ss = QObject::tr("The attribute matrix '%1' does not exist in the 'Moving Cell Data Container' but is expected").arg(movingAttMatList[i]);
+          setErrorCondition(-1003);
+          notifyErrorMessage(getHumanLabel(), ss, getErrorCondition());
+          return;
+        }
+      }
+    }
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -195,7 +344,7 @@ const QString MergeDatasets::getGroupName()
 // -----------------------------------------------------------------------------
 const QString MergeDatasets::getHumanLabel()
 {
-  return "MergeDatasets";
+  return "Merge Datasets";
 }
 
 // -----------------------------------------------------------------------------
@@ -219,7 +368,112 @@ void MergeDatasets::execute()
   if(getErrorCondition() < 0) { return; }
   setErrorCondition(0);
 
-  /* Place all your code to execute your filter here. */
+  //get fixed and moving data containers
+  VolumeDataContainer* mReference = getDataContainerArray()->getDataContainerAs<VolumeDataContainer>(getReferenceCellAttributeMatrixArrayPath().getDataContainerName());
+  VolumeDataContainer* mMoving = getDataContainerArray()->getDataContainerAs<VolumeDataContainer>(getMovingCellAttributeMatrixArrayPath().getDataContainerName());
+
+  //get dimensions, origins, and resolutions
+  size_t ref_udims[3] = { 0, 0, 0 };
+  size_t mov_udims[3] = { 0, 0, 0 };
+  mReference->getDimensions(ref_udims);
+  mMoving->getDimensions(mov_udims);
+  DimType refDims[3] = { static_cast<DimType>(ref_udims[0]), static_cast<DimType>(ref_udims[1]), static_cast<DimType>(ref_udims[2]), };
+  DimType movDims[3] = { static_cast<DimType>(mov_udims[0]), static_cast<DimType>(mov_udims[1]), static_cast<DimType>(mov_udims[2]), };
+
+  float refOrigin[3] = {0.0f, 0.0f, 0.0f};
+  float movingOrigin[3] = {0.0f, 0.0f, 0.0f};
+  mReference->getOrigin(refOrigin);
+  mMoving->getOrigin(movingOrigin);
+
+  float refRes[3] = {0.0f, 0.0f, 0.0f};
+  float movingRes[3] = {0.0f, 0.0f, 0.0f};
+  mReference->getResolution(refRes);
+  mMoving->getResolution(movingRes);
+
+  //get attribute matricies
+  AttributeMatrix::Pointer refCellAttrMat = mReference->getAttributeMatrix(getReferenceCellAttributeMatrixArrayPath().getAttributeMatrixName());
+  AttributeMatrix::Pointer moveCellAttrMat = mMoving->getAttributeMatrix(getMovingCellAttributeMatrixArrayPath().getAttributeMatrixName());
+
+
+  //fill affine transform and invert
+  Eigen::Matrix4f affine;
+  affine<<m_Row1.a, m_Row1.b, m_Row1.c, m_Row1.d, m_Row2.a, m_Row2.b, m_Row2.c, m_Row2.d, m_Row3.a, m_Row3.b, m_Row3.c, m_Row3.d, m_Row4.a, m_Row4.b, m_Row4.c, m_Row4.d;
+  Eigen::Matrix4f inverseAffine = affine.inverse();
+
+  //split into rotation/shear + translation (to avoid lots of extra multiplying 0*something and 1*1)
+  Eigen::Matrix3f transform = inverseAffine.block<3,3>(0,0);
+  Eigen::Vector3f translation = inverseAffine.block<3,1>(0,3);
+
+  //parallel compute merged indicies
+  size_t numTuples = refDims[0] * refDims[1] * refDims[2];
+  DataArray<int64_t>::Pointer newIndiciesPtr = DataArray<int64_t>::CreateArray(numTuples, "New_Indicies");
+  newIndiciesPtr->initializeWithValue(-1);
+  int64_t* newindicies = newIndiciesPtr->getPointer(0);
+
+#ifdef DREAM3D_USE_PARALLEL_ALGORITHMS
+  tbb::task_scheduler_init init;
+  bool doParallel = true;
+#endif
+
+#ifdef DREAM3D_USE_PARALLEL_ALGORITHMS
+  if (doParallel == true)
+  {
+    tbb::parallel_for(tbb::blocked_range3d<size_t, size_t, size_t>(0, refDims[0]-1, 0, refDims[1]-1, 0, refDims[2]-1),
+                      MergeDatasetsImpl(movDims, refDims, movingOrigin, refOrigin, movingRes, refRes, transform, translation, refCellAttrMat, moveCellAttrMat, m_Prefix, newindicies), tbb::auto_partitioner());
+  }
+  else
+#endif
+  {
+    MergeDatasetsImpl serial(movDims, refDims, movingOrigin, refOrigin, movingRes, refRes, transform, translation, refCellAttrMat, moveCellAttrMat, m_Prefix, newindicies);
+    serial.convert(0, refDims[0]-1, 0, refDims[1]-1, 0, refDims[2]-1);
+  }
+
+  //merge cell attribute matrix
+  QList<QString> movingArrayNames = moveCellAttrMat->getAttributeArrayNameList();
+  for (QList<QString>::iterator iter = movingArrayNames.begin(); iter != movingArrayNames.end(); ++iter)
+  {
+    //get name of new array in fixed attribute matric
+    QString newName = m_Prefix + (*iter);
+
+    //make sure that the destination array actually exists (if source + destination are the same prefix_array has already been added by preflight so this loop will try to copy from prefix_array to prefix_prefix_array
+    if(refCellAttrMat->doesAttributeArrayExist(newName))
+    {
+      IDataArray::Pointer pSourceArray = moveCellAttrMat->getAttributeArray(*iter);
+      IDataArray::Pointer pDestArray = refCellAttrMat->getAttributeArray(newName);
+      int nComp = pSourceArray->getNumberOfComponents();
+      for(int i = 0; i < numTuples; i++)
+      {
+        if(-1 != newindicies[i])
+        {
+          void* source = pSourceArray->getVoidPointer(nComp * newindicies[i]);
+          void* destination = pDestArray->getVoidPointer(nComp * i);
+          ::memcpy(destination, source, pSourceArray->getTypeSize() * nComp);
+        }
+        else
+        {
+          pDestArray->initializeTuple(i, 0);
+        }
+      }
+    }
+  }
+
+  //copy the remaining att mats if needed (different data containers)
+  if( 0 != getReferenceCellAttributeMatrixArrayPath().getDataContainerName().compare(getMovingCellAttributeMatrixArrayPath().getDataContainerName()) )
+  {
+    //loop over moving attribute matricies
+    QList<QString> movingAttMatList = mMoving->getAttributeMatrixNameList();
+    for(int i = 0; i < movingAttMatList.size(); i++)
+    {
+      //dont copy cell array, its arrays are have been copied into an existing attribute matrix
+      if( 0 != movingAttMatList[i].compare(getMovingCellAttributeMatrixArrayPath().getAttributeMatrixName()))
+      {
+        //copy attribute matrix from reference to moving
+        QString newName = getPrefix() + movingAttMatList[i];
+        AttributeMatrix::Pointer movingAtrMatPtr = mMoving->getAttributeMatrix(movingAttMatList[i]);
+        mReference->addAttributeMatrix(newName, movingAtrMatPtr);
+      }
+    }
+  }
 
   /* If some error occurs this code snippet can report the error up the call chain*/
   if (err < 0)

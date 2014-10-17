@@ -13,7 +13,7 @@ START_FILTER_GROUP(${DatasetMerging_BINARY_DIR} "${_filterGroupName}" "DatasetMe
 #---------
 # List your public filters here
 set(_PublicFilters
-  #MergeDatasets
+  MergeDatasets
   RegisterOrientations
   RegisterPointSets
   MatchFeatureIds

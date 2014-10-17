@@ -32,35 +32,28 @@ class MergeDatasets : public AbstractFilter
     /* Place your input parameters here using the DREAM3D macros to declare the Filter Parameters
      * or other instance variables
      */
-    DREAM3D_FILTER_PARAMETER(bool, UseTranslation)
-    Q_PROPERTY(bool UseTranslation READ getUseTranslation WRITE setUseTranslation)
+     
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceCellAttributeMatrixArrayPath)
+    Q_PROPERTY(DataArrayPath ReferenceCellAttributeMatrixArrayPath READ getReferenceCellAttributeMatrixArrayPath WRITE setReferenceCellAttributeMatrixArrayPath)
 
-    DREAM3D_FILTER_PARAMETER(FloatVec3_t, TranslationParameters)
-    Q_PROPERTY(FloatVec3_t TranslationParameters READ getTranslationParameters WRITE setTranslationParameters)
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingCellAttributeMatrixArrayPath)
+    Q_PROPERTY(DataArrayPath MovingCellAttributeMatrixArrayPath READ getMovingCellAttributeMatrixArrayPath WRITE setMovingCellAttributeMatrixArrayPath)
 
+    DREAM3D_FILTER_PARAMETER(QString, Prefix)
+    Q_PROPERTY(QString Prefix READ getPrefix WRITE setPrefix)
 
-    DREAM3D_FILTER_PARAMETER(bool, UseRotation)
-    Q_PROPERTY(bool UseRotation READ getUseRotation WRITE setUseRotation)
+    DREAM3D_FILTER_PARAMETER(FloatVec4_t, Row1)
+    Q_PROPERTY(FloatVec4_t Row1 READ getRow1 WRITE setRow1)
+     
+    DREAM3D_FILTER_PARAMETER(FloatVec4_t, Row2)
+    Q_PROPERTY(FloatVec4_t Row2 READ getRow2 WRITE setRow2)
+     
+    DREAM3D_FILTER_PARAMETER(FloatVec4_t, Row3)
+    Q_PROPERTY(FloatVec4_t Row3 READ getRow3 WRITE setRow3)
 
-    DREAM3D_FILTER_PARAMETER(FloatVec3_t, RotationAxis)
-    Q_PROPERTY(FloatVec3_t RotationAxis READ getRotationAxis WRITE setRotationAxis)
+    DREAM3D_FILTER_PARAMETER(FloatVec4_t, Row4)
+    Q_PROPERTY(FloatVec4_t Row4 READ getRow4 WRITE setRow4)
 
-    DREAM3D_FILTER_PARAMETER(float, RotationAngle)
-    Q_PROPERTY(float RotationAngle READ getRotationAngle WRITE setRotationAngle)
-
-
-    DREAM3D_FILTER_PARAMETER(bool, UseScaling)
-    Q_PROPERTY(bool UseScaling READ getUseScaling WRITE setUseScaling)
-
-    DREAM3D_FILTER_PARAMETER(FloatVec3_t, ScalingParamters)
-    Q_PROPERTY(FloatVec3_t ScalingParamters READ getScalingParamters WRITE setScalingParamters)
-
-
-    DREAM3D_FILTER_PARAMETER(bool, UseShearing)
-    Q_PROPERTY(bool UseShearing READ getUseShearing WRITE setUseShearing)
-    
-    DREAM3D_FILTER_PARAMETER(FloatVec3_t, ShearingParameters)
-    Q_PROPERTY(FloatVec3_t ShearingParameters READ getShearingParameters WRITE setShearingParameters)
 
 
 
