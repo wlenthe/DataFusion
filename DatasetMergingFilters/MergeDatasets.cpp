@@ -418,14 +418,14 @@ void MergeDatasets::execute()
 #ifdef DREAM3D_USE_PARALLEL_ALGORITHMS
   if (doParallel == true)
   {
-    tbb::parallel_for(tbb::blocked_range3d<size_t, size_t, size_t>(0, refDims[0]-1, 0, refDims[1]-1, 0, refDims[2]-1),
+    tbb::parallel_for(tbb::blocked_range3d<size_t, size_t, size_t>(0, refDims[2]-1, 0, refDims[1]-1, 0, refDims[0]-1),
                       MergeDatasetsImpl(movDims, refDims, movingOrigin, refOrigin, movingRes, refRes, transform, translation, refCellAttrMat, moveCellAttrMat, m_Prefix, newindicies), tbb::auto_partitioner());
   }
   else
 #endif
   {
     MergeDatasetsImpl serial(movDims, refDims, movingOrigin, refOrigin, movingRes, refRes, transform, translation, refCellAttrMat, moveCellAttrMat, m_Prefix, newindicies);
-    serial.convert(0, refDims[0]-1, 0, refDims[1]-1, 0, refDims[2]-1);
+    serial.convert(0, refDims[2]-1, 0, refDims[1]-1, 0, refDims[0]-1);
   }
 
   //merge cell attribute matrix
