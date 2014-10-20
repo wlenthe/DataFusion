@@ -37,8 +37,11 @@ class MatchFeatureIds : public AbstractFilter
     DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingFeatureIdsArrayPath)
     Q_PROPERTY(DataArrayPath MovingFeatureIdsArrayPath READ getMovingFeatureIdsArrayPath WRITE setMovingFeatureIdsArrayPath)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, CellFeatureAttributeMatrixPath)
-    Q_PROPERTY(DataArrayPath CellFeatureAttributeMatrixPath READ getCellFeatureAttributeMatrixPath WRITE setCellFeatureAttributeMatrixPath)
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingCellFeatureAttributeMatrixPath)
+    Q_PROPERTY(DataArrayPath MovingCellFeatureAttributeMatrixPath READ getMovingCellFeatureAttributeMatrixPath WRITE setMovingCellFeatureAttributeMatrixPath)
+
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceCellFeatureAttributeMatrixPath)
+    Q_PROPERTY(DataArrayPath ReferenceCellFeatureAttributeMatrixPath READ getReferenceCellFeatureAttributeMatrixPath WRITE setReferenceCellFeatureAttributeMatrixPath)
 
 
     DREAM3D_FILTER_PARAMETER(int, Metric)
@@ -46,6 +49,15 @@ class MatchFeatureIds : public AbstractFilter
     
     DREAM3D_FILTER_PARAMETER(float, MetricThreshold)
     Q_PROPERTY(float MetricThreshold READ getMetricThreshold WRITE setMetricThreshold)
+
+    DREAM3D_FILTER_PARAMETER(QString, OverlapArrayName)
+    Q_PROPERTY(QString OverlapArrayName READ getOverlapArrayName WRITE setOverlapArrayName)
+
+    DREAM3D_FILTER_PARAMETER(QString, ReferenceUniqueArrayName)
+    Q_PROPERTY(QString ReferenceUniqueArrayName READ getReferenceUniqueArrayName WRITE setReferenceUniqueArrayName)
+
+    DREAM3D_FILTER_PARAMETER(QString, MovingUniqueArrayName)
+    Q_PROPERTY(QString MovingUniqueArrayName READ getMovingUniqueArrayName WRITE setMovingUniqueArrayName)
 
 
     DREAM3D_FILTER_PARAMETER(bool, UseOrientations)
@@ -172,6 +184,9 @@ class MatchFeatureIds : public AbstractFilter
 
   private:
     QVector<OrientationOps::Pointer> m_OrientationOps;
+    DEFINE_CREATED_DATAARRAY_VARIABLE(float, Overlap)
+    DEFINE_CREATED_DATAARRAY_VARIABLE(bool, ReferenceUnique)
+    DEFINE_CREATED_DATAARRAY_VARIABLE(bool, MovingUnique)
     DEFINE_REQUIRED_DATAARRAY_VARIABLE(int32_t, ReferenceFeatureIds)
     DEFINE_REQUIRED_DATAARRAY_VARIABLE(int32_t, MovingFeatureIds)
     DEFINE_REQUIRED_DATAARRAY_VARIABLE(float, ReferenceQuats)
