@@ -260,8 +260,6 @@ const QString RegisterOrientations::getSubGroupName()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-#define NOMINMAX
-#include <windows.h>
 void RegisterOrientations::execute()
 {
   int err = 0;
