@@ -39,7 +39,7 @@
 
     void convert(size_t start, size_t end) const
     {
-      QVector<OrientationOps::Pointer> ops = OrientationOps::getOrientationOpsVector();
+      std::vector<OrientationOps::Pointer> ops = OrientationOps::getOrientationOpsVector();
 
       QuatF cellQuat1 = {0.0f, 0.0f, 0.0f, 1.0f};
       QuatF cellQuat2 = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -376,7 +376,7 @@ void GenerateDatasetMisorientationColors::execute()
     serial.convert(0, totalPoints);
   }
 
-  QVector<OrientationOps::Pointer> ops = OrientationOps::getOrientationOpsVector();
+  std::vector<OrientationOps::Pointer> ops = OrientationOps::getOrientationOpsVector();
 
   // Check and warn about unsupported crystal symmetries in the computation which will show as black
   for(size_t i = 0; i < notSupported->getNumberOfTuples() - 2; i++)

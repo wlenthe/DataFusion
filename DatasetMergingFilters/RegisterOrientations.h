@@ -184,7 +184,7 @@ class RegisterOrientations : public AbstractFilter
       DEFINE_REQUIRED_DATAARRAY_VARIABLE(unsigned int, MovingCrystalStructures)
       DEFINE_CREATED_DATAARRAY_VARIABLE(float, Transform)
 
-      QVector<OrientationOps::Pointer> m_OrientationOps;
+      std::vector<OrientationOps::Pointer> m_OrientationOps;
 
     RegisterOrientations(const RegisterOrientations&); // Copy Constructor Not Implemented
     void operator=(const RegisterOrientations&); // Operator '=' Not Implemented
