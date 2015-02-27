@@ -20,16 +20,24 @@ RegisterPointSets::RegisterPointSets() :
   m_MovingCentroidsArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellFeatureAttributeMatrixName, DREAM3D::FeatureData::Centroids),
   m_ReferenceGoodFeaturesArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellFeatureAttributeMatrixName, DREAM3D::FeatureData::GoodFeatures),
   m_MovingGoodFeaturesArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellFeatureAttributeMatrixName, DREAM3D::FeatureData::GoodFeatures),
-  m_EnsemblePath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellEnsembleAttributeMatrixName, ""),
-  m_TransformName("temp"),
+  m_AttributeMatrixName(DatasetMerging::Transformation),
+  m_TransformName(DatasetMerging::Transformation),
   m_ReferenceCentroidsArrayName(DREAM3D::FeatureData::Centroids),
   m_MovingCentroidsArrayName(DREAM3D::FeatureData::Centroids),
+  m_UseGoodPoints(true),
   m_ReferenceGoodFeaturesArrayName(DREAM3D::FeatureData::GoodFeatures),
   m_MovingGoodFeaturesArrayName(DREAM3D::FeatureData::GoodFeatures),
+  m_UseWeights(true),
+  m_WeightsArrayName(DREAM3D::FeatureData::Volumes),
   m_ReferenceCentroids(NULL),
   m_MovingCentroids(NULL),
   m_ReferenceGoodFeatures(NULL),
   m_MovingGoodFeatures(NULL),
+  m_AllowTranslation(true),
+  m_AllowRotation(true),
+  m_AllowScaling(false),
+  m_ScalingType(0),
+  m_AllowShearing(false),
   m_Transform(NULL)
 {
   setupFilterParameters();
@@ -48,11 +56,48 @@ RegisterPointSets::~RegisterPointSets()
 void RegisterPointSets::setupFilterParameters()
 {
   FilterParameterVector parameters;
-  parameters.push_back(FilterParameter::New("Reference Centroids", "ReferenceCentroidsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferenceCentroidsArrayPath(), false, ""));
-  parameters.push_back(FilterParameter::New("Moving Centroids", "MovingCentroidsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getMovingCentroidsArrayPath(), false, ""));
-  parameters.push_back(FilterParameter::New("Reference Good Features", "ReferenceGoodFeaturesArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferenceGoodFeaturesArrayPath(), false, ""));
-  parameters.push_back(FilterParameter::New("Moving Good Features", "MovingGoodFeaturesArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getMovingGoodFeaturesArrayPath(), false, ""));
-  parameters.push_back(FilterParameter::New("Ensemble Attribute Matrix", "EnsemblePath", FilterParameterWidgetType::AttributeMatrixSelectionWidget, getEnsemblePath(), true));
+
+  parameters.push_back(FilterParameter::New("Transformation Degrees of Freedom", "", FilterParameterWidgetType::SeparatorWidget, "", false));
+  parameters.push_back(FilterParameter::New("Allow Translation", "AllowTranslation", FilterParameterWidgetType::BooleanWidget, getAllowTranslation(), false));
+  parameters.push_back(FilterParameter::New("Allow Rotation", "AllowRotation", FilterParameterWidgetType::BooleanWidget, getAllowRotation(), false));
+  {
+    QStringList linkedProps;
+    linkedProps << "ScalingType";
+    parameters.push_back(LinkedBooleanFilterParameter::New("Allow Scaling", "AllowScaling", getAllowScaling(), linkedProps, false));
+  }
+  {
+    ChoiceFilterParameter::Pointer parameter = ChoiceFilterParameter::New();
+    parameter->setHumanLabel("Scaling Type");
+    parameter->setPropertyName("ScalingType");
+    parameter->setWidgetType(FilterParameterWidgetType::ChoiceWidget);
+    QVector<QString> choices;
+    choices.push_back("Isotropic");
+    choices.push_back("Anisotropic");
+    parameter->setChoices(choices);
+    parameters.push_back(parameter);
+  }
+  parameters.push_back(FilterParameter::New("Allow Shearing", "AllowShearing", FilterParameterWidgetType::BooleanWidget, getAllowShearing(), false));
+  
+  parameters.push_back(FilterParameter::New("Point Set Selection", "", FilterParameterWidgetType::SeparatorWidget, "", false));
+  parameters.push_back(FilterParameter::New("Reference Points", "ReferenceCentroidsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferenceCentroidsArrayPath(), false, ""));
+  parameters.push_back(FilterParameter::New("Moving Points", "MovingCentroidsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getMovingCentroidsArrayPath(), false, ""));
+  {
+    QStringList linkedProps;
+    linkedProps << "ReferenceGoodFeaturesArrayPath" << "MovingGoodFeaturesArrayPath";
+    parameters.push_back(LinkedBooleanFilterParameter::New("Use Good Points Arrays", "UseGoodPoints", getUseGoodPoints(), linkedProps, false));
+  }
+  parameters.push_back(FilterParameter::New("Reference Good Points", "ReferenceGoodFeaturesArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferenceGoodFeaturesArrayPath(), false, ""));
+  parameters.push_back(FilterParameter::New("Moving Good Points", "MovingGoodFeaturesArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getMovingGoodFeaturesArrayPath(), false, ""));
+
+  {
+    QStringList linkedProps;
+    linkedProps << "WeightsArrayPath";
+    parameters.push_back(LinkedBooleanFilterParameter::New("Weight Pairs", "UseWeights", getUseWeights(), linkedProps, false));
+  }
+  parameters.push_back(FilterParameter::New("Weights", "WeightsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getWeightsArrayPath(), false, ""));
+  
+
+  parameters.push_back(FilterParameter::New("Output Attribute Matrix Name", "AttributeMatrixName", FilterParameterWidgetType::StringWidget, getAttributeMatrixName(), true, ""));
   parameters.push_back(FilterParameter::New("Output Array Name", "TransformName", FilterParameterWidgetType::StringWidget, getTransformName(), true, ""));
   setFilterParameters(parameters);
 }
@@ -63,12 +108,19 @@ void RegisterPointSets::setupFilterParameters()
 void RegisterPointSets::readFilterParameters(AbstractFilterParametersReader* reader, int index)
 {
   reader->openFilterGroup(this, index);
-
+  setAllowTranslation( reader->readValue("AllowTranslation", getAllowTranslation()));
+  setAllowRotation( reader->readValue("AllowRotation", getAllowRotation()));
+  setAllowScaling( reader->readValue("AllowScaling", getAllowScaling()));
+  setScalingType( reader->readValue("ScalingType", getScalingType()));
+  setAllowShearing( reader->readValue("AllowShearing", getAllowShearing()));
   setReferenceCentroidsArrayPath( reader->readDataArrayPath( "ReferenceCentroidsArrayPath", getReferenceCentroidsArrayPath() ) );
   setMovingCentroidsArrayPath( reader->readDataArrayPath( "MovingCentroidsArrayPath", getMovingCentroidsArrayPath() ) );
+  setUseGoodPoints( reader->readValue("UseGoodPoints", getUseGoodPoints()));
   setReferenceGoodFeaturesArrayPath( reader->readDataArrayPath( "ReferenceGoodFeaturesArrayPath", getReferenceGoodFeaturesArrayPath() ) );
   setMovingGoodFeaturesArrayPath( reader->readDataArrayPath( "MovingGoodFeaturesArrayPath", getMovingGoodFeaturesArrayPath() ) );
-  setEnsemblePath( reader->readDataArrayPath( "EnsemblePath", getEnsemblePath() ) );
+  setUseWeights( reader->readValue("UseWeights", getUseWeights()));
+  setWeightsArrayPath( reader->readDataArrayPath( "WeightsArrayPath", getWeightsArrayPath() ) );
+  setAttributeMatrixName( reader->readString( "AttributeMatrixName", getAttributeMatrixName() ) );
   setTransformName(reader->readString("TransformName", getTransformName() ) );
   reader->closeFilterGroup();
 }
@@ -79,11 +131,20 @@ void RegisterPointSets::readFilterParameters(AbstractFilterParametersReader* rea
 int RegisterPointSets::writeFilterParameters(AbstractFilterParametersWriter* writer, int index)
 {
   writer->openFilterGroup(this, index);
+  DREAM3D_FILTER_WRITE_PARAMETER(FilterVersion)
+  DREAM3D_FILTER_WRITE_PARAMETER(AllowTranslation)
+  DREAM3D_FILTER_WRITE_PARAMETER(AllowRotation)
+  DREAM3D_FILTER_WRITE_PARAMETER(AllowScaling)
+  DREAM3D_FILTER_WRITE_PARAMETER(ScalingType)
+  DREAM3D_FILTER_WRITE_PARAMETER(AllowShearing)
   DREAM3D_FILTER_WRITE_PARAMETER(ReferenceCentroidsArrayPath)
   DREAM3D_FILTER_WRITE_PARAMETER(MovingCentroidsArrayPath)
+  DREAM3D_FILTER_WRITE_PARAMETER(UseGoodPoints)
   DREAM3D_FILTER_WRITE_PARAMETER(ReferenceGoodFeaturesArrayPath)
   DREAM3D_FILTER_WRITE_PARAMETER(MovingGoodFeaturesArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(EnsemblePath)
+  DREAM3D_FILTER_WRITE_PARAMETER(UseWeights)
+  DREAM3D_FILTER_WRITE_PARAMETER(WeightsArrayPath)
+  DREAM3D_FILTER_WRITE_PARAMETER(AttributeMatrixName)
   DREAM3D_FILTER_WRITE_PARAMETER(TransformName)
   writer->closeFilterGroup();
   return ++index; // we want to return the next index that was just written to
@@ -96,14 +157,52 @@ void RegisterPointSets::dataCheck()
 {
   setErrorCondition(0);
 
+  //make sure degrees of freedom are an allowed combination
+  if(getAllowRotation())
+  {
+    if(!getAllowTranslation())
+    {
+      QString ss = QObject::tr("Rotation Requires Translation");
+      setErrorCondition(-1);
+      notifyErrorMessage(getHumanLabel(), ss, -1);
+    }
+  }
+
+  if(getAllowShearing())
+  {
+    if(!getAllowRotation())
+    {
+      QString ss = QObject::tr("Shearing Requires Rotation");
+      setErrorCondition(-1);
+      notifyErrorMessage(getHumanLabel(), ss, -1);
+    }
+
+    if(!getAllowScaling() || 0 == getScalingType())
+    {
+      QString ss = QObject::tr("Shearing Requires Anisotropic Scaling");
+      setErrorCondition(-1);
+      notifyErrorMessage(getHumanLabel(), ss, -1);
+    }
+  }
+  if(getErrorCondition() < 0) {return;}
+
   //get pointers to prereq arrays
   QVector<size_t> dims(1, 3);
   m_ReferenceCentroidsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<float>, AbstractFilter>(this, getReferenceCentroidsArrayPath(), dims);
   m_MovingCentroidsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<float>, AbstractFilter>(this, getMovingCentroidsArrayPath(), dims);
 
-  dims[0] = 1;
-  m_ReferenceGoodFeaturesPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<bool>, AbstractFilter>(this, getReferenceGoodFeaturesArrayPath(), dims);
-  m_MovingGoodFeaturesPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<bool>, AbstractFilter>(this, getMovingGoodFeaturesArrayPath(), dims);
+  if(getUseGoodPoints())
+  {
+    dims[0] = 1;
+    m_ReferenceGoodFeaturesPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<bool>, AbstractFilter>(this, getReferenceGoodFeaturesArrayPath(), dims);
+    m_MovingGoodFeaturesPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<bool>, AbstractFilter>(this, getMovingGoodFeaturesArrayPath(), dims);
+  }
+  if(getUseWeights())
+  {
+    dims[0] = 1;
+    m_WeightsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<float>, AbstractFilter>(this, getWeightsArrayPath(), dims);
+  }
+  if(getErrorCondition() < 0) {return;}
 
   //assign pointers
   if( NULL != m_ReferenceCentroidsPtr.lock().get() )
@@ -114,19 +213,36 @@ void RegisterPointSets::dataCheck()
   {
     m_MovingCentroids = m_MovingCentroidsPtr.lock()->getPointer(0);
   }
-  if( NULL != m_ReferenceGoodFeaturesPtr.lock().get() )
+
+  if(getUseGoodPoints())
   {
-    m_ReferenceGoodFeatures = m_ReferenceGoodFeaturesPtr.lock()->getPointer(0);
-  }
-  if( NULL != m_MovingGoodFeaturesPtr.lock().get() )
-  {
-    m_MovingGoodFeatures = m_MovingGoodFeaturesPtr.lock()->getPointer(0);
+    if( NULL != m_ReferenceGoodFeaturesPtr.lock().get() )
+    {
+      m_ReferenceGoodFeatures = m_ReferenceGoodFeaturesPtr.lock()->getPointer(0);
+    }
+    if( NULL != m_MovingGoodFeaturesPtr.lock().get() )
+    {
+      m_MovingGoodFeatures = m_MovingGoodFeaturesPtr.lock()->getPointer(0);
+    }
   }
 
-  //create transform array
+  if(getUseWeights())
+  {
+    if( NULL != m_WeightsPtr.lock().get() )
+    {
+      m_Weights = m_WeightsPtr.lock()->getPointer(0);
+    }
+  }
+
+  //create metadata attribute matrix in reference data container to hold transformation
+  QVector<size_t> tDims(1, 1);//1 spot (single transformation)
+  DataContainer::Pointer m = getDataContainerArray()->getPrereqDataContainer<AbstractFilter>(this, getReferenceCentroidsArrayPath().getDataContainerName());
+  AttributeMatrix::Pointer attrMat = m->createNonPrereqAttributeMatrix<AbstractFilter>(this, getAttributeMatrixName(), tDims, DREAM3D::AttributeMatrixType::MetaData);
+   
+  //create array to hold transformation
   DataArrayPath tempPath;
-  QVector<size_t> transDims(2, 4);
-  tempPath.update(getEnsemblePath().getDataContainerName(), getEnsemblePath().getAttributeMatrixName(), getTransformName() );
+  QVector<size_t> transDims(2, 4);//4x4 array
+  tempPath.update(getReferenceCentroidsArrayPath().getDataContainerName(), getAttributeMatrixName(), getTransformName() );
   m_TransformPtr = getDataContainerArray()->createNonPrereqArrayFromPath<DataArray<float>, AbstractFilter, float>(this, tempPath, 0, transDims);
   if( NULL != m_TransformPtr.lock().get() )
   {
@@ -161,7 +277,7 @@ const QString RegisterPointSets::getCompiledLibraryName()
 // -----------------------------------------------------------------------------
 const QString RegisterPointSets::getGroupName()
 {
-  return "DatasetMerging";
+  return DatasetMerging::DatasetMergingPluginDisplayName;
 }
 
 // -----------------------------------------------------------------------------
@@ -169,7 +285,7 @@ const QString RegisterPointSets::getGroupName()
 // -----------------------------------------------------------------------------
 const QString RegisterPointSets::getHumanLabel()
 {
-  return "Register Centroids";
+  return "Register Point Sets";
 }
 
 // -----------------------------------------------------------------------------
@@ -177,7 +293,7 @@ const QString RegisterPointSets::getHumanLabel()
 // -----------------------------------------------------------------------------
 const QString RegisterPointSets::getSubGroupName()
 {
-  return "Misc";
+  return DREAM3D::FilterSubGroups::AlignmentFilters;
 }
 
 // -----------------------------------------------------------------------------
@@ -193,96 +309,183 @@ void RegisterPointSets::execute()
   if(getErrorCondition() < 0) { return; }
   setErrorCondition(0);
 
-  //create list of shared grains with non zero volume
-  size_t referenceNumFeatures = m_ReferenceGoodFeaturesPtr.lock()->getNumberOfTuples();
-  size_t movingNumFeatures = m_MovingGoodFeaturesPtr.lock()->getNumberOfTuples();
-  size_t numFeatures = std::min(referenceNumFeatures, movingNumFeatures);
-  std::vector<size_t> sharedFeatures;
-  for(size_t i=0; i<numFeatures; i++)
-  {
-    if(m_ReferenceGoodFeatures[i])
-    {
-      if(m_MovingGoodFeatures[i])
-      {
-        sharedFeatures.push_back(i);
-      }
-    }
-  }
+  //fill transformation with identity matrix by default (in case filter exits early)
+  m_Transform[0] = 1;
+  m_Transform[1] = 0;
+  m_Transform[2] = 0;
+  m_Transform[3] = 0;
 
-  /*
-  for each point the affine transform T: {x} = [T]*{xo}:
-    x   | T11 T12 T13 T14 |   xo
-    y = | T21 T22 T23 T24 | * yo
-    z   | T31 T32 T33 T34 |   zo
-    w   |  0   0   0   1  |   1
+  m_Transform[4] = 0;
+  m_Transform[5] = 1;
+  m_Transform[6] = 0;
+  m_Transform[7] = 0;
 
-  rewritten:
-    x   | xo yo zo  1  0  0  0  0  0  0  0  0 |   | T11 |
-    y = |  0  0  0  0 xo yo zo  1  0  0  0  0 | * | T12 |
-    z   |  0  0  0  0  0  0  0  0 xo yo zo  1 |   | T13 |
-                                                  | T14 |
-                                                  | T21 |
-                                                  | T22 |
-                                                  | T23 |
-                                                  | T24 |
-                                                  | T31 |
-                                                  | T32 |
-                                                  | T33 |
-                                                  | T34 |
+  m_Transform[8] = 0;
+  m_Transform[9] = 0;
+  m_Transform[10] = 1;
+  m_Transform[11] = 0;
 
-  for the system of points:
-    x1   | x1o y1o z1o  1   0   0   0   0   0   0   0   0 |   | T11 |
-    y1   |  0   0   0   0  x1o y1o z1o  1   0   0   0   0 |   | T12 |
-    z1   |  0   0   0   0   0   0   0   0  x1o y1o z1o  1 |   | T13 |
-    x2   | x2o y2o z2o  1   0   0   0   0   0   0   0   0 |   | T14 |
-    y2   |  0   0   0   0  x2o y2o z2o  1   0   0   0   0 |   | T21 |
-    z2 = |  0   0   0   0   0   0   0   0  x2o y2o z2o  1 | * | T22 |
-    x3   | x3o y3o z3o  1   0   0   0   0   0   0   0   0 |   | T23 |
-    y3   |  0   0   0   0  x3o y3o z3o  1   0   0   0   0 |   | T24 |
-    z3   |  0   0   0   0   0   0   0   0  x3o y3o z3o  1 |   | T31 |
-    x4   | x4o y4o z4o  1   0   0   0   0   0   0   0   0 |   | T32 |
-    y4   |  0   0   0   0  x4o y4o z4o  1   0   0   0   0 |   | T33 |
-    z4   |  0   0   0   0   0   0   0   0  x4o y4o z4o  1 |   | T34 |
-    ...  |                       ...                      |
-
-    {b} =                         |A|                        * {x}
-
-   solving linear system for {x} yields affine transfrom coefficients 
-  */
-
-  //create/fill A and b matrix/vector
-  size_t numPoints = sharedFeatures.size();
-  Eigen::MatrixXf A = Eigen::MatrixXf::Zero(3*numPoints, 12);
-  Eigen::VectorXf b = Eigen::VectorXf::Zero(3*numPoints);
-
-  for(size_t i=0; i<numPoints; i++)
-  {
-    size_t index = 3 * i;
-    size_t gIndex = 3 * sharedFeatures[i];
-
-    //fill A
-    A.row(index+0)<<m_MovingCentroids[gIndex+0], m_MovingCentroids[gIndex+1], m_MovingCentroids[gIndex+2], 1, 0, 0, 0, 0, 0, 0, 0, 0;
-    A.row(index+1)<<0, 0, 0, 0, m_MovingCentroids[gIndex+0], m_MovingCentroids[gIndex+1], m_MovingCentroids[gIndex+2], 1, 0, 0, 0, 0;
-    A.row(index+2)<<0, 0, 0, 0, 0, 0, 0, 0, m_MovingCentroids[gIndex+0], m_MovingCentroids[gIndex+1], m_MovingCentroids[gIndex+2], 1;
-
-    //fill b
-    b(index+0) = m_ReferenceCentroids[gIndex+0];
-    b(index+1) = m_ReferenceCentroids[gIndex+1];
-    b(index+2) = m_ReferenceCentroids[gIndex+2];
-  }
-
-  //solve for affine matrix
-  Eigen::VectorXf x = A.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b);
-
-  for(int i=0; i<12; i++)
-  {
-    m_Transform[i] = x(i);
-  }
   m_Transform[12] = 0;
   m_Transform[13] = 0;
   m_Transform[14] = 0;
   m_Transform[15] = 1;
 
+  //create list of matched point
+  size_t referenceNumFeatures = m_ReferenceCentroidsPtr.lock()->getNumberOfTuples();
+  size_t movingNumFeatures = m_MovingCentroidsPtr.lock()->getNumberOfTuples();
+  size_t numFeatures = std::min(referenceNumFeatures, movingNumFeatures);
+  std::vector<size_t> sharedFeatures;
+  for(size_t i = 0; i < numFeatures; i++)
+  {
+    //dont add bad points to list
+    if(getUseGoodPoints())
+    {
+      if( !(m_ReferenceGoodFeatures[i] && m_MovingGoodFeatures[i]) )
+      {
+        continue;
+      }
+    }
+    sharedFeatures.push_back(i);
+  }
+  size_t numPoints = sharedFeatures.size();
+
+  //behavoir depends on degrees of freedom (t=translation, r=rotation, i=isotropic scaling, a=anisotropic scaling, s=shear)
+  //I'll allow the following combinations (in ~increasing degrees of freedom)
+  //t, ti, ta, tr, tir, tar, tars (full affine)
+  //other possible combinations are possible (eg ts or r) but are either not useful or I don't know how to compute the least squared solution
+  //weighting of points is possible but has been omitted for now
+
+  //create matrix + vector to hold transfomration + translation (default to identiy matrix and no translation)
+  Eigen::Matrix3f transformation = Eigen::Matrix3f::Identity();
+  Eigen::Vector3f translation = Eigen::Vector3f::Zero();
+
+  //compute center of mass for each point set (computations require both sets centered at origin)
+  Eigen::Vector3f xBar = Eigen::Vector3f::Zero();//moving points centroid
+  Eigen::Vector3f yBar = Eigen::Vector3f::Zero();//reference points centroid
+  float totalW = 0.0f;
+  for(size_t i = 0; i < numPoints; i++)
+  {
+    size_t index = 3 * sharedFeatures[i];
+    float w = 1.0f;
+    if(getUseWeights())
+    {
+      w = m_Weights[sharedFeatures[i]];
+    }
+    xBar += w * Eigen::Vector3f(m_MovingCentroids[index + 0], m_MovingCentroids[index + 1], m_MovingCentroids[index + 2]);
+    yBar += w * Eigen::Vector3f(m_ReferenceCentroids[index + 0], m_ReferenceCentroids[index + 1], m_ReferenceCentroids[index + 2]);
+  }
+  xBar /= numPoints;
+  yBar /= numPoints;
+  if(getUseWeights())
+  {
+    xBar /= totalW;
+    yBar /= totalW;
+  }
+
+  //compute variance and covariance matrices
+  Eigen::Matrix3f covariance = Eigen::Matrix3f::Zero();
+  Eigen::Matrix3f variance = Eigen::Matrix3f::Zero();
+  for(size_t i = 0; i < numPoints; i++)
+  {
+    size_t index = 3 * sharedFeatures[i];
+    Eigen::Vector3f x(m_MovingCentroids[index + 0], m_MovingCentroids[index + 1], m_MovingCentroids[index + 2]);
+    Eigen::Vector3f y(m_ReferenceCentroids[index + 0], m_ReferenceCentroids[index + 1], m_ReferenceCentroids[index + 2]);
+    x -= xBar;
+    y -= yBar;
+    float w = 1.0f;
+    if(getUseWeights())
+    {
+      w = m_Weights[sharedFeatures[i]];
+    }
+    covariance += w * Eigen::Matrix3f(x * y.transpose());
+    variance += w * Eigen::Matrix3f(x * x.transpose());
+  }
+
+  //shear and no shear are handled differently
+  if(getAllowShearing())
+  {
+    if(getAllowRotation() && getAllowScaling() && 1 == getScalingType())
+    {
+      //full affine
+      transformation = variance.inverse() * covariance;
+      transformation.transposeInPlace();
+    }
+    else
+    {
+      //bad combination
+      QString ss = QObject::tr("Unallowed combination of degree(s) of freedom");
+      setErrorCondition(-1);
+      notifyErrorMessage(getHumanLabel(), ss, -1);
+      return;
+    }
+  }
+  else//no shear
+  {
+    //compute rotation if allowed
+    if(getAllowRotation())
+    {
+      //perform singular value decomposition of covariance matrix
+      Eigen::JacobiSVD<Eigen::Matrix3f> svd(covariance, Eigen::ComputeFullU | Eigen::ComputeFullV);
+      
+      //check determinates (det(V) * det(U) == 1 for rotation or -1 for rotation + reflection)
+      //least square rotation matrix is V * I * U^T if det(V) == 1, V * {{1,0,0},{0,1,0},{0,0,-1}} * U^T if == -1
+      Eigen::Matrix3f i = Eigen::Matrix3f::Identity();
+      if(svd.matrixV().determinant() * svd.matrixU().determinant() < 0)
+      {
+        i(2, 2) = -1;
+      }
+      transformation = svd.matrixV() * i * svd.matrixU().transpose();
+    }
+
+    //compute scaling if needed
+    if(getAllowScaling())
+    {
+      Eigen::Matrix3f scale = Eigen::Matrix3f::Identity();
+      Eigen::Matrix3f numerator = transformation * covariance;
+      Eigen::Matrix3f denomenator = transformation * variance * transformation.transpose();
+
+      if(0 == getScalingType())
+      {
+        //isotropic scaling
+        scale.diagonal().fill( numerator.trace() / denomenator.trace() );
+      }
+      else//(1 == getScalingType())
+      {
+        scale.diagonal() = numerator.diagonal().cwiseQuotient(denomenator.diagonal());
+      }
+
+      //combine rotation + scaling
+      transformation = transformation * scale;
+    }
+  }
+
+  //compute translation
+  if(getAllowTranslation())
+  {
+    translation = yBar - transformation * xBar;
+  }
+
+  //fill transformation
+  m_Transform[0] = transformation(0, 0);
+  m_Transform[1] = transformation(0, 1);
+  m_Transform[2] = transformation(0, 2);
+  m_Transform[3] = translation(0);
+  
+  m_Transform[4] = transformation(1, 0);
+  m_Transform[5] = transformation(1, 1);
+  m_Transform[6] = transformation(1, 2);
+  m_Transform[7] = translation(1);
+
+  m_Transform[8] = transformation(2, 0);
+  m_Transform[9] = transformation(2, 1);
+  m_Transform[10] = transformation(2, 2);
+  m_Transform[11] = translation(2);
+
+  if (getCancel() == true)
+  {
+    /* Gracefully clean up your filter before exiting. */
+    return;
+  }
 
   /* If some error occurs this code snippet can report the error up the call chain*/
   if (err < 0)

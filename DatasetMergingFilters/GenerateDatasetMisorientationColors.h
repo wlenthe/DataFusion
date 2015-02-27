@@ -29,7 +29,6 @@ class GenerateDatasetMisorientationColors : public AbstractFilter
 
     virtual ~GenerateDatasetMisorientationColors();
 
-    /* Place your input parameters here. You can use some of the DREAM3D Macros if you want to */
     DREAM3D_FILTER_PARAMETER(DataArrayPath, CellPhasesArrayPath1)
     Q_PROPERTY(DataArrayPath CellPhasesArrayPath1 READ getCellPhasesArrayPath1 WRITE setCellPhasesArrayPath1)
 
@@ -54,8 +53,15 @@ class GenerateDatasetMisorientationColors : public AbstractFilter
     DREAM3D_FILTER_PARAMETER(QString, MisorientationColorArrayName)
     Q_PROPERTY(QString MisorientationColorArrayName READ getMisorientationColorArrayName WRITE setMisorientationColorArrayName)
 
+    DREAM3D_FILTER_PARAMETER(QString, HighAngleFlagArrayName)
+    Q_PROPERTY(QString HighAngleFlagArrayName READ getHighAngleFlagArrayName WRITE setHighAngleFlagArrayName)
+
     DREAM3D_FILTER_PARAMETER(bool, UseGoodVoxels)
     Q_PROPERTY(bool UseGoodVoxels READ getUseGoodVoxels WRITE setUseGoodVoxels)
+
+    DREAM3D_FILTER_PARAMETER(float, MinAngle)
+    Q_PROPERTY(float MinAngle READ getMinAngle WRITE setMinAngle)
+
 
 
     /**
@@ -154,7 +160,7 @@ class GenerateDatasetMisorientationColors : public AbstractFilter
     */
     void dataCheck();
 
-  private:    
+  private:
     DEFINE_REQUIRED_DATAARRAY_VARIABLE(int32_t, CellPhases1)
     DEFINE_REQUIRED_DATAARRAY_VARIABLE(int32_t, CellPhases2)
     DEFINE_REQUIRED_DATAARRAY_VARIABLE(float, Quats1)
@@ -162,6 +168,7 @@ class GenerateDatasetMisorientationColors : public AbstractFilter
     DEFINE_REQUIRED_DATAARRAY_VARIABLE(unsigned int, CrystalStructures1)
     DEFINE_REQUIRED_DATAARRAY_VARIABLE(unsigned int, CrystalStructures2)
     DEFINE_CREATED_DATAARRAY_VARIABLE(uint8_t, MisorientationColor)
+    DEFINE_CREATED_DATAARRAY_VARIABLE(bool, HighAngleFlag)
     DEFINE_REQUIRED_DATAARRAY_VARIABLE(bool, GoodVoxels)
 
     GenerateDatasetMisorientationColors(const GenerateDatasetMisorientationColors&); // Copy Constructor Not Implemented

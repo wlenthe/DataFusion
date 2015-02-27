@@ -2,8 +2,8 @@
  * Your License or Copyright Information can go here
  */
 
-#ifndef _MergeDatasets_H_
-#define _MergeDatasets_H_
+#ifndef _MergeVolumes_H_
+#define _MergeVolumes_H_
 
 
 #include "DREAM3DLib/DREAM3DLib.h"
@@ -12,27 +12,23 @@
 
 
 /**
- * @class MergeDatasets MergeDatasets.h DatasetMerging/DatasetMergingFilters/MergeDatasets.h
+ * @class MergeVolumes MergeVolumes.h DatasetMerging/DatasetMergingFilters/MergeVolumes.h
  * @brief
  * @author
  * @date
  * @version 1.0
  */
-class MergeDatasets : public AbstractFilter
+class MergeVolumes : public AbstractFilter
 {
   Q_OBJECT /* Need this for Qt's signals and slots mechanism to work */
 
   public:
-    DREAM3D_SHARED_POINTERS(MergeDatasets)
-    DREAM3D_STATIC_NEW_MACRO(MergeDatasets)
-    DREAM3D_TYPE_MACRO_SUPER(MergeDatasets, AbstractFilter)
+    DREAM3D_SHARED_POINTERS(MergeVolumes)
+    DREAM3D_STATIC_NEW_MACRO(MergeVolumes)
+    DREAM3D_TYPE_MACRO_SUPER(MergeVolumes, AbstractFilter)
 
-    virtual ~MergeDatasets();
+    virtual ~MergeVolumes();
 
-    /* Place your input parameters here using the DREAM3D macros to declare the Filter Parameters
-     * or other instance variables
-     */
-     
     DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceCellAttributeMatrixArrayPath)
     Q_PROPERTY(DataArrayPath ReferenceCellAttributeMatrixArrayPath READ getReferenceCellAttributeMatrixArrayPath WRITE setReferenceCellAttributeMatrixArrayPath)
 
@@ -53,7 +49,6 @@ class MergeDatasets : public AbstractFilter
 
     DREAM3D_FILTER_PARAMETER(FloatVec4_t, Row4)
     Q_PROPERTY(FloatVec4_t Row4 READ getRow4 WRITE setRow4)
-
 
 
 
@@ -146,7 +141,7 @@ class MergeDatasets : public AbstractFilter
     void preflightExecuted();
 
   protected:
-    MergeDatasets();
+    MergeVolumes();
 
     /**
     * @brief Checks for the appropriate parameter values and availability of arrays in the data container
@@ -159,8 +154,8 @@ class MergeDatasets : public AbstractFilter
      * and  DEFINE_CREATED_DATAARRAY_VARIABLE() which are defined in DREAM3DGetSetMacros.h
      */
 
-    MergeDatasets(const MergeDatasets&); // Copy Constructor Not Implemented
-    void operator=(const MergeDatasets&); // Operator '=' Not Implemented
+    MergeVolumes(const MergeVolumes&); // Copy Constructor Not Implemented
+    void operator=(const MergeVolumes&); // Operator '=' Not Implemented
 };
 
-#endif /* _MergeDatasets_H_ */
+#endif /* _MergeVolumes_H_ */
