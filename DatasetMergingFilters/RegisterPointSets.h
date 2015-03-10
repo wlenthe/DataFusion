@@ -50,6 +50,18 @@ class RegisterPointSets : public AbstractFilter
     DREAM3D_FILTER_PARAMETER(QString, TransformName)
     Q_PROPERTY(QString TransformName READ getTransformName WRITE setTransformName)
 
+    DREAM3D_INSTANCE_PROPERTY(bool, AllowTranslation)
+    Q_PROPERTY(bool AllowTranslation READ getAllowTranslation WRITE setAllowTranslation)
+
+    DREAM3D_INSTANCE_PROPERTY(bool, AllowRotation)
+    Q_PROPERTY(bool AllowRotation READ getAllowRotation WRITE setAllowRotation)
+
+    DREAM3D_INSTANCE_PROPERTY(bool, AllowScaling)
+    Q_PROPERTY(bool AllowScaling READ getAllowScaling WRITE setAllowScaling)
+
+    DREAM3D_INSTANCE_PROPERTY(bool, AllowShearing)
+    Q_PROPERTY(bool AllowShearing READ getAllowShearing WRITE setAllowShearing)
+
     /**
      * @brief getCompiledLibraryName Returns the name of the Library that this filter is a part of
      * @return

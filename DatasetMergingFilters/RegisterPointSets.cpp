@@ -30,6 +30,12 @@ RegisterPointSets::RegisterPointSets() :
   m_MovingCentroids(NULL),
   m_ReferenceGoodFeatures(NULL),
   m_MovingGoodFeatures(NULL),
+
+  m_AllowTranslation(true),
+  m_AllowRotation(true),
+  m_AllowScaling(false),
+  m_AllowShearing(false),
+
   m_Transform(NULL)
 {
   setupFilterParameters();
@@ -48,6 +54,10 @@ RegisterPointSets::~RegisterPointSets()
 void RegisterPointSets::setupFilterParameters()
 {
   FilterParameterVector parameters;
+  parameters.push_back(FilterParameter::New("Allow Translation", "AllowTranslation", FilterParameterWidgetType::BooleanWidget, getAllowTranslation(), false));
+  parameters.push_back(FilterParameter::New("Allow Rotation", "AllowRotation", FilterParameterWidgetType::BooleanWidget, getAllowRotation(), false));
+  parameters.push_back(FilterParameter::New("Allow Scaling", "AllowScaling", FilterParameterWidgetType::BooleanWidget, getAllowScaling(), false));
+  parameters.push_back(FilterParameter::New("Allow Shearing", "AllowShearing", FilterParameterWidgetType::BooleanWidget, getAllowShearing(), false));
   parameters.push_back(FilterParameter::New("Reference Centroids", "ReferenceCentroidsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferenceCentroidsArrayPath(), false, ""));
   parameters.push_back(FilterParameter::New("Moving Centroids", "MovingCentroidsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getMovingCentroidsArrayPath(), false, ""));
   parameters.push_back(FilterParameter::New("Reference Good Features", "ReferenceGoodFeaturesArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferenceGoodFeaturesArrayPath(), false, ""));
@@ -63,6 +73,11 @@ void RegisterPointSets::setupFilterParameters()
 void RegisterPointSets::readFilterParameters(AbstractFilterParametersReader* reader, int index)
 {
   reader->openFilterGroup(this, index);
+  
+  setAllowTranslation( reader->readValue("AllowTranslation", getAllowTranslation()));
+  setAllowRotation( reader->readValue("AllowRotation", getAllowRotation()));
+  setAllowScaling( reader->readValue("AllowScaling", getAllowScaling()));
+  setAllowShearing( reader->readValue("AllowShearing", getAllowShearing()));
 
   setReferenceCentroidsArrayPath( reader->readDataArrayPath( "ReferenceCentroidsArrayPath", getReferenceCentroidsArrayPath() ) );
   setMovingCentroidsArrayPath( reader->readDataArrayPath( "MovingCentroidsArrayPath", getMovingCentroidsArrayPath() ) );
@@ -79,6 +94,13 @@ void RegisterPointSets::readFilterParameters(AbstractFilterParametersReader* rea
 int RegisterPointSets::writeFilterParameters(AbstractFilterParametersWriter* writer, int index)
 {
   writer->openFilterGroup(this, index);
+
+  DREAM3D_FILTER_WRITE_PARAMETER(AllowTranslation)
+  DREAM3D_FILTER_WRITE_PARAMETER(AllowRotation)
+  DREAM3D_FILTER_WRITE_PARAMETER(AllowScaling)
+  DREAM3D_FILTER_WRITE_PARAMETER(AllowShearing)
+
+
   DREAM3D_FILTER_WRITE_PARAMETER(ReferenceCentroidsArrayPath)
   DREAM3D_FILTER_WRITE_PARAMETER(MovingCentroidsArrayPath)
   DREAM3D_FILTER_WRITE_PARAMETER(ReferenceGoodFeaturesArrayPath)

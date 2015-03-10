@@ -18,10 +18,10 @@ MatchFeatureIds::MatchFeatureIds() :
   AbstractFilter(),
   m_ReferenceUnique(NULL),
   m_MovingUnique(NULL),
-  m_ReferenceUniqueArrayName("UniqueFeatures"),
-  m_MovingUniqueArrayName("UniqueFeatures"),
+  m_ReferenceUniqueArrayName(DatasetMerging::UniqueFeatures),
+  m_MovingUniqueArrayName(DatasetMerging::UniqueFeatures),
   m_Overlap(NULL),
-  m_OverlapArrayName("SimilarityCoefficient"),
+  m_OverlapArrayName(DatasetMerging::SimilarityCoefficient),
   m_ReferenceFeatureIds(NULL),
   m_ReferenceQuats(NULL),
   m_ReferencePhases(NULL),
@@ -239,7 +239,7 @@ const QString MatchFeatureIds::getCompiledLibraryName()
 // -----------------------------------------------------------------------------
 const QString MatchFeatureIds::getGroupName()
 {
-  return "DatasetMerging";
+  return DatasetMerging::DatasetMergingPluginDisplayName;
 }
 
 // -----------------------------------------------------------------------------
@@ -255,7 +255,7 @@ const QString MatchFeatureIds::getHumanLabel()
 // -----------------------------------------------------------------------------
 const QString MatchFeatureIds::getSubGroupName()
 {
-  return "Misc";
+  return DREAM3D::FilterSubGroups::MorphologicalFilters;
 }
 
 // custom class to handle holding of pair data
@@ -271,7 +271,7 @@ class OverlapPair {
       return index < other.index;
     } 
 };
-#include <windows.h>
+
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
