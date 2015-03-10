@@ -10,8 +10,7 @@
 #include "DREAM3DLib/Common/DREAM3DSetGetMacros.h"
 #include "DREAM3DLib/Common/AbstractFilter.h"
 
- #include "DREAM3DLib/OrientationOps/OrientationOps.h"
-
+ #include "OrientationLib/OrientationOps/OrientationOps.h"
 
 /**
  * @class MatchFeatureIds MatchFeatureIds.h DatasetMerging/DatasetMergingFilters/MatchFeatureIds.h
@@ -83,6 +82,7 @@ class MatchFeatureIds : public AbstractFilter
 
     DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingCrystalStructuresArrayPath)
     Q_PROPERTY(DataArrayPath MovingCrystalStructuresArrayPath READ getMovingCrystalStructuresArrayPath WRITE setMovingCrystalStructuresArrayPath)
+
 
 
 

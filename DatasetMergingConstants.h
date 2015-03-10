@@ -11,8 +11,11 @@
 */
 namespace DatasetMerging {
   const QString DatasetMergingPluginFile("DatasetMergingPlugin");
-  const QString DatasetMergingPluginDisplayName("DatasetMergingPlugin");
+  const QString DatasetMergingPluginDisplayName("DatasetMerging");
   const QString DatasetMergingBaseName("DatasetMergingPlugin");
+  const DREAM3D_STRING UniqueFeatures("UniqueFeatures");
+  const DREAM3D_STRING SimilarityCoefficient("SimilarityCoefficient");
+  const DREAM3D_STRING Transformation("Transformation");
 }
 
 /**

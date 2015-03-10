@@ -13,18 +13,19 @@
 
 #include <QtCore/QString>
 
-#include "DREAM3DLib/Math/OrientationMath.h"
+#include "OrientationLib/Math/OrientationMath.h"
 #include "DREAM3DLib/Utilities/ColorTable.h"
-#include "DREAM3DLib/OrientationOps/OrientationOps.h"
+#include "OrientationLib/OrientationOps/OrientationOps.h"
 
 #include "DatasetMerging/DatasetMergingConstants.h"
 
- class GenerateMisorientationColorsImpl
+
+class GenerateMisorientationColorsImpl
 {
 
   public:
     GenerateMisorientationColorsImpl(QuatF* quats1, QuatF* quats2, int32_t* phases1, int32_t* phases2, unsigned int* crystalStructures1, unsigned int* crystalStructures2,
-                                     bool* goodVoxels, uint8_t* notSupported, uint8_t* colors) :
+                                     bool* goodVoxels, uint8_t* notSupported, uint8_t* colors, float minAngle, bool* angleFlag) :
       m_Quats1(quats1),
       m_Quats2(quats2),
       m_CellPhases1(phases1),
@@ -33,7 +34,9 @@
       m_CrystalStructures2(crystalStructures2),
       m_GoodVoxels(goodVoxels),
       m_NotSupported(notSupported),
-      m_MisorientationColor(colors)
+      m_MisorientationColor(colors),
+      m_AngleTol(minAngle * DREAM3D::Constants::k_Pi / 180.0f),
+      m_Flag(angleFlag)
     {}
     virtual ~GenerateMisorientationColorsImpl() {}
 
@@ -61,6 +64,7 @@
         m_MisorientationColor[index] = 0;
         m_MisorientationColor[index + 1] = 0;
         m_MisorientationColor[index + 2] = 0;
+        m_Flag[i] = false;
         cellQuat1 = m_Quats1[i];
         cellQuat2 = m_Quats2[i];
 
@@ -92,6 +96,14 @@
           m_MisorientationColor[index] = RgbColor::dRed(argb);
           m_MisorientationColor[index + 1] = RgbColor::dGreen(argb);
           m_MisorientationColor[index + 2] = RgbColor::dBlue(argb);
+
+          //compute misorientation angle
+          float n1, n2, n3;
+          float angle = ops[m_CrystalStructures1[phase1]]->getMisoQuat(cellQuat1, cellQuat2, n1, n2, n3);
+          if(angle > m_AngleTol)
+          {
+            m_Flag[i] = true;
+          }
         }
       }
     }
@@ -112,6 +124,8 @@
     bool* m_GoodVoxels;
     uint8_t* m_NotSupported;
     uint8_t* m_MisorientationColor;
+    float m_AngleTol;
+    bool* m_Flag;
 
 };
 
@@ -128,6 +142,7 @@ GenerateDatasetMisorientationColors::GenerateDatasetMisorientationColors() :
   m_CrystalStructuresArrayPath2(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellEnsembleAttributeMatrixName, DREAM3D::EnsembleData::CrystalStructures),
   m_GoodVoxelsArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, DREAM3D::CellData::GoodVoxels),
   m_MisorientationColorArrayName(DREAM3D::CellData::MisorientationColor),
+  m_HighAngleFlagArrayName(DREAM3D::GeneralData::ThresholdArray),
   m_UseGoodVoxels(false),
   m_CellPhases1ArrayName(DREAM3D::CellData::Phases),
   m_CellPhases2ArrayName(DREAM3D::CellData::Phases),
@@ -142,9 +157,10 @@ GenerateDatasetMisorientationColors::GenerateDatasetMisorientationColors() :
   m_CrystalStructures1(NULL),
   m_CrystalStructures2(NULL),
   m_MisorientationColor(NULL),
+  m_HighAngleFlag(NULL),
   m_GoodVoxelsArrayName(DREAM3D::CellData::GoodVoxels),
-  m_GoodVoxels(NULL)
-/* DO NOT FORGET TO INITIALIZE ALL YOUR DREAM3D Filter Parameters HERE */
+  m_GoodVoxels(NULL),
+  m_MinAngle(5.0f)
 {
   setupFilterParameters();
 }
@@ -162,6 +178,8 @@ GenerateDatasetMisorientationColors::~GenerateDatasetMisorientationColors()
 void GenerateDatasetMisorientationColors::setupFilterParameters()
 {
   FilterParameterVector parameters;
+  parameters.push_back(FilterParameter::New("Low Angle Flag Tolerance", "MinAngle", FilterParameterWidgetType::DoubleWidget, getMinAngle(), false, ""));
+  
   parameters.push_back(FilterParameter::New("Required Information (Dataset 1)", "", FilterParameterWidgetType::SeparatorWidget, "", false));
   parameters.push_back(FilterParameter::New("Cell Phases", "CellPhasesArrayPath1", FilterParameterWidgetType::DataArraySelectionWidget, getCellPhasesArrayPath1(), false, ""));
   parameters.push_back(FilterParameter::New("Quats", "QuatsArrayPath1", FilterParameterWidgetType::DataArraySelectionWidget, getQuatsArrayPath1(), false, ""));
@@ -179,6 +197,7 @@ void GenerateDatasetMisorientationColors::setupFilterParameters()
 
   parameters.push_back(FilterParameter::New("Created Information", "", FilterParameterWidgetType::SeparatorWidget, "", true));
   parameters.push_back(FilterParameter::New("MisorientationColor", "MisorientationColorArrayName", FilterParameterWidgetType::StringWidget, getMisorientationColorArrayName(), true, ""));
+  parameters.push_back(FilterParameter::New("HighAngleFlag", "HighAngleFlagArrayName", FilterParameterWidgetType::StringWidget, getHighAngleFlagArrayName(), true, ""));
   setFilterParameters(parameters);
 }
 
@@ -188,8 +207,10 @@ void GenerateDatasetMisorientationColors::setupFilterParameters()
 void GenerateDatasetMisorientationColors::readFilterParameters(AbstractFilterParametersReader* reader, int index)
 {
   reader->openFilterGroup(this, index);
+  setMinAngle(reader->readValue("MinAngle", getMinAngle() ) );
   setUseGoodVoxels(reader->readValue("UseGoodVoxels", getUseGoodVoxels() ) );
   setMisorientationColorArrayName(reader->readString("MisorientationColorArrayName", getMisorientationColorArrayName() ) );
+  setHighAngleFlagArrayName(reader->readString("HighAngleFlagArrayName", getHighAngleFlagArrayName() ) );
   setGoodVoxelsArrayPath(reader->readDataArrayPath("GoodVoxelsArrayPath", getGoodVoxelsArrayPath() ) );
   setCrystalStructuresArrayPath1(reader->readDataArrayPath("CrystalStructuresArrayPath1", getCrystalStructuresArrayPath1() ) );
   setCrystalStructuresArrayPath2(reader->readDataArrayPath("CrystalStructuresArrayPath2", getCrystalStructuresArrayPath2() ) );
@@ -206,8 +227,11 @@ void GenerateDatasetMisorientationColors::readFilterParameters(AbstractFilterPar
 int GenerateDatasetMisorientationColors::writeFilterParameters(AbstractFilterParametersWriter* writer, int index)
 {
   writer->openFilterGroup(this, index);
+  DREAM3D_FILTER_WRITE_PARAMETER(FilterVersion)
+  DREAM3D_FILTER_WRITE_PARAMETER(MinAngle)
   DREAM3D_FILTER_WRITE_PARAMETER(UseGoodVoxels)
   DREAM3D_FILTER_WRITE_PARAMETER(MisorientationColorArrayName)
+  DREAM3D_FILTER_WRITE_PARAMETER(HighAngleFlagArrayName)
   DREAM3D_FILTER_WRITE_PARAMETER(GoodVoxelsArrayPath)
   DREAM3D_FILTER_WRITE_PARAMETER(CrystalStructuresArrayPath1)
   DREAM3D_FILTER_WRITE_PARAMETER(CrystalStructuresArrayPath2)
@@ -266,12 +290,18 @@ void GenerateDatasetMisorientationColors::dataCheck()
   if( NULL != m_CrystalStructures2Ptr.lock().get() ) /* Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object */
   { m_CrystalStructures2 = m_CrystalStructures2Ptr.lock()->getPointer(0); } /* Now assign the raw pointer to data from the DataArray<T> object */
   
+  tempPath.update(m_CellPhasesArrayPath1.getDataContainerName(), m_CellPhasesArrayPath1.getAttributeMatrixName(), getHighAngleFlagArrayName() );
+  m_HighAngleFlagPtr = getDataContainerArray()->createNonPrereqArrayFromPath<DataArray<bool>, AbstractFilter, bool>(this, tempPath, 0, dims); /* Assigns the shared_ptr<> to an instance variable that is a weak_ptr<> */
+  if( NULL != m_HighAngleFlagPtr.lock().get() ) /* Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object */
+  { m_HighAngleFlag = m_HighAngleFlagPtr.lock()->getPointer(0); } /* Now assign the raw pointer to data from the DataArray<T> object */
 
   dims[0] = 3;
   tempPath.update(m_CellPhasesArrayPath1.getDataContainerName(), m_CellPhasesArrayPath1.getAttributeMatrixName(), getMisorientationColorArrayName() );
   m_MisorientationColorPtr = getDataContainerArray()->createNonPrereqArrayFromPath<DataArray<uint8_t>, AbstractFilter, uint8_t>(this, tempPath, 0, dims); /* Assigns the shared_ptr<> to an instance variable that is a weak_ptr<> */
   if( NULL != m_MisorientationColorPtr.lock().get() ) /* Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object */
   { m_MisorientationColor = m_MisorientationColorPtr.lock()->getPointer(0); } /* Now assign the raw pointer to data from the DataArray<T> object */
+
+
 
   // The good voxels array is optional, If it is available we are going to use it, otherwise we are going to create it
   dims[0] = 1;
@@ -316,7 +346,7 @@ const QString GenerateDatasetMisorientationColors::getCompiledLibraryName()
 // -----------------------------------------------------------------------------
 const QString GenerateDatasetMisorientationColors::getGroupName()
 {
-  return "DatasetMerging";
+  return DatasetMerging::DatasetMergingPluginDisplayName;
 }
 
 // -----------------------------------------------------------------------------
@@ -324,7 +354,7 @@ const QString GenerateDatasetMisorientationColors::getGroupName()
 // -----------------------------------------------------------------------------
 const QString GenerateDatasetMisorientationColors::getHumanLabel()
 {
-  return "Generate Merged Dataset Misorientation Colors";
+  return "Generate Dataset Misorientation Colors";
 }
 
 // -----------------------------------------------------------------------------
@@ -332,7 +362,7 @@ const QString GenerateDatasetMisorientationColors::getHumanLabel()
 // -----------------------------------------------------------------------------
 const QString GenerateDatasetMisorientationColors::getSubGroupName()
 {
-  return "Misc";
+  return DREAM3D::FilterSubGroups::CrystallographyFilters;
 }
 
 // -----------------------------------------------------------------------------
@@ -341,9 +371,13 @@ const QString GenerateDatasetMisorientationColors::getSubGroupName()
 void GenerateDatasetMisorientationColors::execute()
 {
   int err = 0;
-  setErrorCondition(err);
+  // typically run your dataCheck function to make sure you can get that far and all your variables are initialized
   dataCheck();
+  // Check to make sure you made it through the data check. Errors would have been reported already so if something
+  // happens to fail in the dataCheck() then we simply return
   if(getErrorCondition() < 0) { return; }
+  setErrorCondition(0);
+
 
   int64_t totalPoints = m_CellPhases1Ptr.lock()->getNumberOfTuples();
 
@@ -366,13 +400,13 @@ void GenerateDatasetMisorientationColors::execute()
   if (doParallel == true)
   {
     tbb::parallel_for(tbb::blocked_range<size_t>(0, totalPoints),
-                      GenerateMisorientationColorsImpl(reinterpret_cast<QuatF*>(m_Quats1), reinterpret_cast<QuatF*>(m_Quats2), m_CellPhases1, m_CellPhases2, m_CrystalStructures1, m_CrystalStructures2, m_GoodVoxels, notSupported->getPointer(0), m_MisorientationColor), tbb::auto_partitioner());
+                      GenerateMisorientationColorsImpl(reinterpret_cast<QuatF*>(m_Quats1), reinterpret_cast<QuatF*>(m_Quats2), m_CellPhases1, m_CellPhases2, m_CrystalStructures1, m_CrystalStructures2, m_GoodVoxels, notSupported->getPointer(0), m_MisorientationColor, m_MinAngle, m_HighAngleFlag), tbb::auto_partitioner());
 
   }
   else
 #endif
   {
-    GenerateMisorientationColorsImpl serial(reinterpret_cast<QuatF*>(m_Quats1), reinterpret_cast<QuatF*>(m_Quats2), m_CellPhases1, m_CellPhases2, m_CrystalStructures1, m_CrystalStructures2, m_GoodVoxels, notSupported->getPointer(0), m_MisorientationColor);
+    GenerateMisorientationColorsImpl serial(reinterpret_cast<QuatF*>(m_Quats1), reinterpret_cast<QuatF*>(m_Quats2), m_CellPhases1, m_CellPhases2, m_CrystalStructures1, m_CrystalStructures2, m_GoodVoxels, notSupported->getPointer(0), m_MisorientationColor, m_MinAngle, m_HighAngleFlag);
     serial.convert(0, totalPoints);
   }
 
@@ -401,6 +435,21 @@ void GenerateDatasetMisorientationColors::execute()
   {
     QString msg("There were voxels with 2 different phases. These voxels have been colored black BUT black is a valid color for Misorientation coloring. Please understand this when visualizing your data.");
     notifyWarningMessage(getHumanLabel(), msg, -501);
+  }
+
+  if (getCancel() == true)
+  {
+    /* Gracefully clean up your filter before exiting. */
+    return;
+  }
+
+  /* If some error occurs this code snippet can report the error up the call chain*/
+  if (err < 0)
+  {
+    QString ss = QObject::tr("Some error message");
+    setErrorCondition(-99999999);
+    notifyErrorMessage(getHumanLabel(), ss, getErrorCondition());
+    return;
   }
 
   /* Let the GUI know we are done with this filter */

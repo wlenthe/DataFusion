@@ -5,6 +5,7 @@
 #include "RegisterOrientations.h"
 
 #include <QtCore/QString>
+
 #include <QtCore/QFileInfo>
 #include <QtCore/QDir>
 #include <QtCore/QFile>
@@ -36,7 +37,6 @@ RegisterOrientations::RegisterOrientations() :
   m_OutputFile(""),
   m_MinMiso(1.0)
 {
-  m_OrientationOps = OrientationOps::getOrientationOpsVector();
   setupFilterParameters();
 }
 
@@ -53,7 +53,6 @@ RegisterOrientations::~RegisterOrientations()
 void RegisterOrientations::setupFilterParameters()
 {
   FilterParameterVector parameters;
-
   parameters.push_back(FilterParameter::New("Reference Quats", "ReferenceAvgQuatsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferenceAvgQuatsArrayPath(), false, ""));
   parameters.push_back(FilterParameter::New("Moving Quats", "MovingAvgQuatsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getMovingAvgQuatsArrayPath(), false, ""));
   parameters.push_back(FilterParameter::New("Reference Phases", "ReferencePhasesArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferencePhasesArrayPath(), false, ""));
@@ -67,7 +66,6 @@ void RegisterOrientations::setupFilterParameters()
   parameters.push_back(LinkedBooleanFilterParameter::New("Write Best Rotations to File", "WriteOutputs", getWriteOutputs(), linkedProps, false));
   parameters.push_back(FileSystemFilterParameter::New("Output File", "OutputFile", FilterParameterWidgetType::OutputFileWidget, getOutputFile(), false, "", "*.csv", "Comma Separated Data"));
   parameters.push_back(FilterParameter::New("Minimum Average Rotation Angle", "MinMiso", FilterParameterWidgetType::DoubleWidget, getMinMiso(), true, ""));
-
   setFilterParameters(parameters);
 }
 
@@ -97,6 +95,7 @@ void RegisterOrientations::readFilterParameters(AbstractFilterParametersReader* 
 int RegisterOrientations::writeFilterParameters(AbstractFilterParametersWriter* writer, int index)
 {
   writer->openFilterGroup(this, index);
+  DREAM3D_FILTER_WRITE_PARAMETER(FilterVersion)
   DREAM3D_FILTER_WRITE_PARAMETER(ReferenceAvgQuatsArrayPath)
   DREAM3D_FILTER_WRITE_PARAMETER(MovingAvgQuatsArrayPath)
   DREAM3D_FILTER_WRITE_PARAMETER(ReferenceGoodFeaturesArrayPath)
@@ -105,12 +104,9 @@ int RegisterOrientations::writeFilterParameters(AbstractFilterParametersWriter* 
   DREAM3D_FILTER_WRITE_PARAMETER(MovingPhasesArrayPath)
   DREAM3D_FILTER_WRITE_PARAMETER(ReferenceCrystalStructuresArrayPath)
   DREAM3D_FILTER_WRITE_PARAMETER(MovingCrystalStructuresArrayPath)
-  // DREAM3D_FILTER_WRITE_PARAMETER(EnsemblePath)
-  // DREAM3D_FILTER_WRITE_PARAMETER(TransformName)
   DREAM3D_FILTER_WRITE_PARAMETER(WriteOutputs)
   DREAM3D_FILTER_WRITE_PARAMETER(OutputFile)
   DREAM3D_FILTER_WRITE_PARAMETER(MinMiso)
-
   writer->closeFilterGroup();
   return ++index; // we want to return the next index that was just written to
 }
@@ -199,16 +195,6 @@ void RegisterOrientations::dataCheck()
     setErrorCondition(-1004);
     return;
   }
-
-  //create transform array
-  /*DataArrayPath tempPath;
-  dims[0]=4;
-  tempPath.update(getEnsemblePath().getDataContainerName(), getEnsemblePath().getAttributeMatrixName(), getTransformName() );
-  m_TransformPtr = getDataContainerArray()->createNonPrereqArrayFromPath<DataArray<float>, AbstractFilter, float>(this, tempPath, 0, dims);
-  if( NULL != m_TransformPtr.lock().get() )
-  {
-    m_Transform = m_TransformPtr.lock()->getPointer(0);
-  }*/
 }
 
 // -----------------------------------------------------------------------------
@@ -238,7 +224,7 @@ const QString RegisterOrientations::getCompiledLibraryName()
 // -----------------------------------------------------------------------------
 const QString RegisterOrientations::getGroupName()
 {
-  return "DatasetMerging";
+  return DatasetMerging::DatasetMergingPluginDisplayName;
 }
 
 // -----------------------------------------------------------------------------
@@ -254,7 +240,7 @@ const QString RegisterOrientations::getHumanLabel()
 // -----------------------------------------------------------------------------
 const QString RegisterOrientations::getSubGroupName()
 {
-  return "Misc";
+  return DREAM3D::FilterSubGroups::AlignmentFilters;
 }
 
 // -----------------------------------------------------------------------------
@@ -480,7 +466,7 @@ AbstractFilter::Pointer RegisterOrientations::newFilterInstance(bool copyFilterP
     //    DREAM3D_COPY_INSTANCEVAR(ZStartIndex)
     //    DREAM3D_COPY_INSTANCEVAR(ZEndIndex)
     //    DREAM3D_COPY_INSTANCEVAR(ZResolution)
-    //    DREAM3D_COPY_INSTANCEVAR(ZResolution)
   }
   return filter;
 }
+

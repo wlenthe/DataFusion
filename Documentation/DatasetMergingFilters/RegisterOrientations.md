@@ -1,4 +1,4 @@
-RegisterOrientations {#registerorientations}
+Register Orientations {#registerorientations}
 =====
 
 ## Group (Subgroup) ##
@@ -6,21 +6,18 @@ DatasetMerging (DatasetMerging)
 
 
 ## Description ##
-This filter finds the average rotation from <B>Moving Quats</B> to <B>Reference Quats</B> and then applies it to <B>Moving Quats</B> align their reference frames. The average rotation is computed with the following algorithm:
+This filter finds the average rotation from <B>Moving Quats</B> to <B>Reference Quats</B> and then applies it to <B>Moving Quats</B> to align their crystallographic reference frames. The average rotation is computed with the following algorithm:
 
-- Create list features that are good in both <B>Reference Good Features</B> and <B>Moving Good Features</B> (these are assumed to be the same feature and are check to make sure they shared the same crystal structure).
-- Loop over shared good feature and for each:
+- Create list of features that are good in both <B>Reference Good Features</B> and <B>Moving Good Features</B> (these are assumed to be the same feature and are checked to make sure they shared the same crystal structure).
+- Loop over shared good features and for each:
 	- Compute the rotation between <B>Reference Quats</B> and <B>Moving Quats</B> for the feature
 	- Loop over the phase's symmetry operators and for each:
-		- Compute the equivalent rotation expression ('<I>candidate rotation</I>')
+		- Compute the equivalent rotation ('<I>candidate rotation</I>')
 		- Loop over every other pair of quaternions and for each:
 			- Apply the '<I>candidate rotation</I>'
-			- Compute the rotation between modified <B>Reference</B> and <B>Moving</B>
-			- Loop over the phase's symmetry operators and for each:
-				- Compute the equivalent rotation expression ('<I>resulting rotation candidate</I>')
-			- Find the '<I>resulting rotation candidate</I>' with the lowest rotation angle ('<I>minimum rotation angle</I>')
-		- Find the average '<I>minimum rotation angle</I>' for this '<I>candidate rotation</I>'
-	- Select the '<I>candidate rotation</I>' resulting in the minimum a'<I>minimum rotation angle</I>' and add to list ('<I>best rotations</I>')
+			- Compute the misorientation angle between modified <B>Reference</B> and <B>Moving</B> orientations
+		- Find the average misorientation angle for this '<I>candidate rotation</I>'
+	- Select the '<I>candidate rotation</I>' resulting in the minimum average misorientation angle and add to list of '<I>best rotations</I>'
 - Average all '<I>best rotations</I>' with a corresponding average '<I>minimum rotation angle</I>' below the <B>Minimum Average Rotation Angle</B>
 
 ## Parameters ##
@@ -43,20 +40,20 @@ This filter finds the average rotation from <B>Moving Quats</B> to <B>Reference 
 | Boolean  | ThresholdArray           | Reference Features' Good Features        |
 | Boolean  | ThresholdArray           | Moving Features' Good Features        |
 
-## Created Arrays ##
 
-None
+## Created Arrays ##
+none
 
 
 
 ## Authors: ##
 
-**Copyright:** 2014 Will Lenthe (UCSB)
+**Copyright:** Who holds the copyright for the code
 
-**Contact Info:** willlenthe@gmail.com
+**Contact Info:** email address
 
-**Version:** 1.0.0
+**Version:** x.y.z
 
-**License:**  See the License.txt file that came with DREAM3D.
+**License:**  What is the license for this code
 
 
