@@ -10,8 +10,7 @@
 #include "DREAM3DLib/Common/DREAM3DSetGetMacros.h"
 #include "DREAM3DLib/Common/AbstractFilter.h"
 
-#include "DREAM3DLib/OrientationOps/OrientationOps.h"
-
+#include "OrientationLib/OrientationOps/OrientationOps.h"
 
 /**
  * @class RegisterOrientations RegisterOrientations.h DatasetMerging/DatasetMergingFilters/RegisterOrientations.h
@@ -31,9 +30,6 @@ class RegisterOrientations : public AbstractFilter
 
     virtual ~RegisterOrientations();
 
-    /* Place your input parameters here using the DREAM3D macros to declare the Filter Parameters
-     * or other instance variables
-     */
     DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceAvgQuatsArrayPath)
     Q_PROPERTY(DataArrayPath ReferenceAvgQuatsArrayPath READ getReferenceAvgQuatsArrayPath WRITE setReferenceAvgQuatsArrayPath)
 
@@ -58,12 +54,6 @@ class RegisterOrientations : public AbstractFilter
     DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingCrystalStructuresArrayPath)
     Q_PROPERTY(DataArrayPath MovingCrystalStructuresArrayPath READ getMovingCrystalStructuresArrayPath WRITE setMovingCrystalStructuresArrayPath)
 
-    // DREAM3D_FILTER_PARAMETER(DataArrayPath, EnsemblePath)
-    // Q_PROPERTY(DataArrayPath EnsemblePath READ getEnsemblePath WRITE setEnsemblePath)
-
-    // DREAM3D_FILTER_PARAMETER(QString, TransformName)
-    // Q_PROPERTY(QString TransformName READ getTransformName WRITE setTransformName)
-
     DREAM3D_FILTER_PARAMETER(bool, WriteOutputs)
     Q_PROPERTY(bool WriteOutputs READ getWriteOutputs WRITE setWriteOutputs)
 
@@ -72,6 +62,8 @@ class RegisterOrientations : public AbstractFilter
 
     DREAM3D_FILTER_PARAMETER(double, MinMiso)
     Q_PROPERTY(double MinMiso READ getMinMiso WRITE setMinMiso)
+
+
 
     /**
      * @brief getCompiledLibraryName Returns the name of the Library that this filter is a part of
@@ -170,21 +162,16 @@ class RegisterOrientations : public AbstractFilter
     void dataCheck();
 
   private:
-    /* Your private class instance variables go here. You can use several preprocessor macros to help
-     * make sure you have all the variables defined correctly. Those are "DEFINE_REQUIRED_DATAARRAY_VARIABLE()"
-     * and  DEFINE_CREATED_DATAARRAY_VARIABLE() which are defined in DREAM3DGetSetMacros.h
-     */
-      DEFINE_REQUIRED_DATAARRAY_VARIABLE(float, ReferenceAvgQuats)
-      DEFINE_REQUIRED_DATAARRAY_VARIABLE(float, MovingAvgQuats)
-      DEFINE_REQUIRED_DATAARRAY_VARIABLE(bool, ReferenceGoodFeatures)
-      DEFINE_REQUIRED_DATAARRAY_VARIABLE(bool, MovingGoodFeatures)
-      DEFINE_REQUIRED_DATAARRAY_VARIABLE(int32_t, ReferencePhases)
-      DEFINE_REQUIRED_DATAARRAY_VARIABLE(int32_t, MovingPhases)
-      DEFINE_REQUIRED_DATAARRAY_VARIABLE(unsigned int, ReferenceCrystalStructures)
-      DEFINE_REQUIRED_DATAARRAY_VARIABLE(unsigned int, MovingCrystalStructures)
-      DEFINE_CREATED_DATAARRAY_VARIABLE(float, Transform)
-
-      std::vector<OrientationOps::Pointer> m_OrientationOps;
+    QVector<OrientationOps::Pointer> m_OrientationOps;
+    DEFINE_REQUIRED_DATAARRAY_VARIABLE(float, ReferenceAvgQuats)
+    DEFINE_REQUIRED_DATAARRAY_VARIABLE(float, MovingAvgQuats)
+    DEFINE_REQUIRED_DATAARRAY_VARIABLE(bool, ReferenceGoodFeatures)
+    DEFINE_REQUIRED_DATAARRAY_VARIABLE(bool, MovingGoodFeatures)
+    DEFINE_REQUIRED_DATAARRAY_VARIABLE(int32_t, ReferencePhases)
+    DEFINE_REQUIRED_DATAARRAY_VARIABLE(int32_t, MovingPhases)
+    DEFINE_REQUIRED_DATAARRAY_VARIABLE(unsigned int, ReferenceCrystalStructures)
+    DEFINE_REQUIRED_DATAARRAY_VARIABLE(unsigned int, MovingCrystalStructures)
+    DEFINE_CREATED_DATAARRAY_VARIABLE(float, Transform)
 
     RegisterOrientations(const RegisterOrientations&); // Copy Constructor Not Implemented
     void operator=(const RegisterOrientations&); // Operator '=' Not Implemented

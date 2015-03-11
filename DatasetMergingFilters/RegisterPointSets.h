@@ -38,14 +38,23 @@ class RegisterPointSets : public AbstractFilter
     DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingCentroidsArrayPath)
     Q_PROPERTY(DataArrayPath MovingCentroidsArrayPath READ getMovingCentroidsArrayPath WRITE setMovingCentroidsArrayPath)
 
+    DREAM3D_INSTANCE_PROPERTY(bool, UseGoodPoints)
+    Q_PROPERTY(bool UseGoodPoints READ getUseGoodPoints WRITE setUseGoodPoints)
+
     DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceGoodFeaturesArrayPath)
     Q_PROPERTY(DataArrayPath ReferenceGoodFeaturesArrayPath READ getReferenceGoodFeaturesArrayPath WRITE setReferenceGoodFeaturesArrayPath)
 
     DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingGoodFeaturesArrayPath)
     Q_PROPERTY(DataArrayPath MovingGoodFeaturesArrayPath READ getMovingGoodFeaturesArrayPath WRITE setMovingGoodFeaturesArrayPath)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, EnsemblePath)
-    Q_PROPERTY(DataArrayPath EnsemblePath READ getEnsemblePath WRITE setEnsemblePath)
+    DREAM3D_INSTANCE_PROPERTY(bool, UseWeights)
+    Q_PROPERTY(bool UseWeights READ getUseWeights WRITE setUseWeights)
+
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, WeightsArrayPath)
+    Q_PROPERTY(DataArrayPath WeightsArrayPath READ getWeightsArrayPath WRITE setWeightsArrayPath)
+
+    DREAM3D_FILTER_PARAMETER(QString, AttributeMatrixName)
+    Q_PROPERTY(QString AttributeMatrixName READ getAttributeMatrixName WRITE setAttributeMatrixName)
 
     DREAM3D_FILTER_PARAMETER(QString, TransformName)
     Q_PROPERTY(QString TransformName READ getTransformName WRITE setTransformName)
@@ -58,6 +67,9 @@ class RegisterPointSets : public AbstractFilter
 
     DREAM3D_INSTANCE_PROPERTY(bool, AllowScaling)
     Q_PROPERTY(bool AllowScaling READ getAllowScaling WRITE setAllowScaling)
+
+    DREAM3D_INSTANCE_PROPERTY(int, ScalingType)
+    Q_PROPERTY(int ScalingType READ getScalingType WRITE setScalingType)
 
     DREAM3D_INSTANCE_PROPERTY(bool, AllowShearing)
     Q_PROPERTY(bool AllowShearing READ getAllowShearing WRITE setAllowShearing)
@@ -159,15 +171,12 @@ class RegisterPointSets : public AbstractFilter
     void dataCheck();
 
   private:
-    /* Your private class instance variables go here. You can use several preprocessor macros to help
-     * make sure you have all the variables defined correctly. Those are "DEFINE_REQUIRED_DATAARRAY_VARIABLE()"
-     * and  DEFINE_CREATED_DATAARRAY_VARIABLE() which are defined in DREAM3DGetSetMacros.h
-     */
-  DEFINE_REQUIRED_DATAARRAY_VARIABLE(float, ReferenceCentroids)
-  DEFINE_REQUIRED_DATAARRAY_VARIABLE(float, MovingCentroids)
-  DEFINE_REQUIRED_DATAARRAY_VARIABLE(bool, ReferenceGoodFeatures)
-  DEFINE_REQUIRED_DATAARRAY_VARIABLE(bool, MovingGoodFeatures)
-  DEFINE_CREATED_DATAARRAY_VARIABLE(float, Transform)
+    DEFINE_REQUIRED_DATAARRAY_VARIABLE(float, ReferenceCentroids)
+    DEFINE_REQUIRED_DATAARRAY_VARIABLE(float, MovingCentroids)
+    DEFINE_REQUIRED_DATAARRAY_VARIABLE(bool, ReferenceGoodFeatures)
+    DEFINE_REQUIRED_DATAARRAY_VARIABLE(bool, MovingGoodFeatures)
+    DEFINE_REQUIRED_DATAARRAY_VARIABLE(float, Weights)
+    DEFINE_CREATED_DATAARRAY_VARIABLE(float, Transform)
 
     RegisterPointSets(const RegisterPointSets&); // Copy Constructor Not Implemented
     void operator=(const RegisterPointSets&); // Operator '=' Not Implemented

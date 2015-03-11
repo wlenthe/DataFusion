@@ -183,7 +183,7 @@ class MatchFeatureIds : public AbstractFilter
     void dataCheck();
 
   private:
-    std::vector<OrientationOps::Pointer> m_OrientationOps;
+    QVector<OrientationOps::Pointer> m_OrientationOps;
     DEFINE_CREATED_DATAARRAY_VARIABLE(float, Overlap)
     DEFINE_CREATED_DATAARRAY_VARIABLE(bool, ReferenceUnique)
     DEFINE_CREATED_DATAARRAY_VARIABLE(bool, MovingUnique)
