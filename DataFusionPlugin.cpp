@@ -18,13 +18,13 @@
 //
 // -----------------------------------------------------------------------------
 DataFusionPlugin::DataFusionPlugin() :
-m_Version("0.1.0"),                            // Initialize DataFusion's Version Number Here
-m_CompatibilityVersion("0.1.0"), // Initialize DataFusion's Compatibility Version Number Here
-m_Vendor("Vendor Name"),                                // Initialize DataFusion's Vendor Name Here
-m_URL("URL"),                                           // Initialize Company URL Here
+m_Version("1.0"),                            // Initialize DataFusion's Version Number Here
+m_CompatibilityVersion("1.0"), // Initialize DataFusion's Compatibility Version Number Here
+m_Vendor("Will Lenthe"),                                // Initialize DataFusion's Vendor Name Here
+m_URL("-"),                                           // Initialize Company URL Here
 m_Location("Location"),                                 // Initialize DataFusion library Location Here
 m_Description("Description"),                           // Initialize DataFusion's Description Here
-m_Copyright("Copyright"),                               // Initialize DataFusion's Copyright Here
+m_Copyright("(C) 2015 William Lenthe"),                               // Initialize DataFusion's Copyright Here
 m_Filters(QList<QString>()),                        // Initialize DataFusion's List of Dependencies Here
 m_DidLoad(false)
 {

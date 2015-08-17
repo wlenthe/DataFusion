@@ -17,6 +17,8 @@ This filter fuses two 3D attribute matrices into one using the given affine tran
 | Transform | manually augmented transformation matrix (3x4 with translations in last column) |
 
 ## Required Arrays ##
+| Name             | Type |
+|------------------|------|
 | Transform | 4x4 augmented transformation matrix |
 
 ## Created Arrays ##
