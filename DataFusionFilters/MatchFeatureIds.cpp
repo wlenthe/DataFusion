@@ -1,20 +1,23 @@
 /*
- * Your License or Copyright Information can go here
+ * Your License or Copyright can go here
  */
 
 #include "MatchFeatureIds.h"
 
-#include <QtCore/QString>
+#include "DREAM3DLib/Common/Constants.h"
+#include "DREAM3DLib/FilterParameters/AbstractFilterParametersReader.h"
+#include "DREAM3DLib/FilterParameters/AbstractFilterParametersWriter.h"
 
- #include "DREAM3DLib/Common/Constants.h"
+#include "DREAM3DLib/FilterParameters/DataArraySelectionFilterParameter.h"
+#include "DREAM3DLib/FilterParameters/AttributeMatrixSelectionFilterParameter.h"
+#include "DREAM3DLib/FilterParameters/ChoiceFilterParameter.h"
+#include "DREAM3DLib/FilterParameters/DoubleFilterParameter.h"
+#include "DREAM3DLib/FilterParameters/StringFilterParameter.h"
+#include "DREAM3DLib/FilterParameters/LinkedBooleanFilterParameter.h"
 
-// #include "DREAM3DLib/Math/QuaternionMath.hpp"
-// #include "OrientationLib/Math/OrientationMath.h"
-#include "OrientationLib/OrientationOps/OrientationOps.h"
-// #include "DREAM3DLib/Math/MatrixMath.h"
+#include "DREAM3DLib/FilterParameters/DataArrayCreationFilterParameter.h"
 
-
-#include "DatasetMerging/DatasetMergingConstants.h"
+#include "DataFusion/DataFusionConstants.h"
 
 // -----------------------------------------------------------------------------
 //
@@ -23,10 +26,10 @@ MatchFeatureIds::MatchFeatureIds() :
   AbstractFilter(),
   m_ReferenceUnique(NULL),
   m_MovingUnique(NULL),
-  m_ReferenceUniqueArrayName(DatasetMerging::UniqueFeatures),
-  m_MovingUniqueArrayName(DatasetMerging::UniqueFeatures),
+  m_ReferenceUniqueArrayName(DataFusionConstants::UniqueFeatures),
+  m_MovingUniqueArrayName(DataFusionConstants::UniqueFeatures),
   m_Overlap(NULL),
-  m_OverlapArrayName(DatasetMerging::SimilarityCoefficient),
+  m_OverlapArrayName(DataFusionConstants::SimilarityCoefficient),
   m_ReferenceFeatureIds(NULL),
   m_ReferenceQuats(NULL),
   m_ReferencePhases(NULL),
@@ -44,13 +47,13 @@ MatchFeatureIds::MatchFeatureIds() :
   m_MovingPhasesArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellFeatureAttributeMatrixName, DREAM3D::FeatureData::Phases),
   m_MovingCrystalStructuresArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellEnsembleAttributeMatrixName, DREAM3D::EnsembleData::CrystalStructures),
   m_UseOrientations(false),
-  m_OrientationTolerance(5.0f),
+  m_OrientationTolerance(5.0),
   m_Metric(1),
-  m_MetricThreshold(0.1f),
+  m_MetricThreshold(0.5),
   m_ReferenceCellFeatureAttributeMatrixPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellFeatureAttributeMatrixName, ""),
   m_MovingCellFeatureAttributeMatrixPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellFeatureAttributeMatrixName, "")
 {
-  m_OrientationOps = OrientationOps::getOrientationOpsQVector();
+  m_OrientationOps = SpaceGroupOps::getOrientationOpsQVector();
   setupFilterParameters();
 }
 
@@ -67,10 +70,11 @@ MatchFeatureIds::~MatchFeatureIds()
 void MatchFeatureIds::setupFilterParameters()
 {
   FilterParameterVector parameters;
-  parameters.push_back(FilterParameter::New("Reference Feature Ids", "ReferenceFeatureIdsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferenceFeatureIdsArrayPath(), false, ""));
-  parameters.push_back(FilterParameter::New("Moving Feature Ids", "MovingFeatureIdsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getMovingFeatureIdsArrayPath(), false, ""));
-  parameters.push_back(FilterParameter::New("Reference Cell Feature Attribute Matrix", "ReferenceCellFeatureAttributeMatrixPath", FilterParameterWidgetType::AttributeMatrixSelectionWidget, getReferenceCellFeatureAttributeMatrixPath(), false));
-  parameters.push_back(FilterParameter::New("Moving Cell Feature Attribute Matrix", "MovingCellFeatureAttributeMatrixPath", FilterParameterWidgetType::AttributeMatrixSelectionWidget, getMovingCellFeatureAttributeMatrixPath(), false));
+  parameters.push_back(DataArraySelectionFilterParameter::New("Reference Feature Ids", "ReferenceFeatureIdsArrayPath", getReferenceFeatureIdsArrayPath(), FilterParameter::RequiredArray));
+  parameters.push_back(DataArraySelectionFilterParameter::New("Moving Feature Ids", "MovingFeatureIdsArrayPath", getMovingFeatureIdsArrayPath(), FilterParameter::RequiredArray));
+  
+  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Reference Cell Feature Attribute Matrix", "ReferenceCellFeatureAttributeMatrixPath", getReferenceCellFeatureAttributeMatrixPath(), FilterParameter::RequiredArray));
+  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Moving Cell Feature Attribute Matrix", "MovingCellFeatureAttributeMatrixPath", getMovingCellFeatureAttributeMatrixPath(), FilterParameter::RequiredArray));
   
   QVector<QString> choices;
     choices.push_back("Jaccard");
@@ -79,26 +83,29 @@ void MatchFeatureIds::setupFilterParameters()
   ChoiceFilterParameter::Pointer parameter = ChoiceFilterParameter::New();
     parameter->setHumanLabel("Similairty Coefficient");
     parameter->setPropertyName("Metric");
-    parameter->setWidgetType(FilterParameterWidgetType::ChoiceWidget);
     parameter->setChoices(choices);
+    parameter->setCategory(FilterParameter::Parameter);
   parameters.push_back(parameter);
-  parameters.push_back(FilterParameter::New("Minimum Metric Value", "MetricThreshold", FilterParameterWidgetType::DoubleWidget, getMetricThreshold(), false, ""));
 
-  parameters.push_back(FilterParameter::New("Created Information", "", FilterParameterWidgetType::SeparatorWidget, "", true));
-  parameters.push_back(FilterParameter::New("Matched Similarity Coefficient", "OverlapArrayName", FilterParameterWidgetType::StringWidget, getOverlapArrayName(), true, ""));
-  parameters.push_back(FilterParameter::New("Reference Unique Grains", "ReferenceUniqueArrayName", FilterParameterWidgetType::StringWidget, getReferenceUniqueArrayName(), true, ""));
-  parameters.push_back(FilterParameter::New("Moving Unique Grains", "MovingUniqueArrayName", FilterParameterWidgetType::StringWidget, getMovingUniqueArrayName(), true, ""));
+  parameters.push_back(DoubleFilterParameter::New("Minimum Metric Value", "MetricThreshold", getMetricThreshold(), FilterParameter::Parameter));
+  
+  parameters.push_back(StringFilterParameter::New("Matched Similarity Coefficient", "OverlapArrayName", getOverlapArrayName(), FilterParameter::CreatedArray));
+  parameters.push_back(StringFilterParameter::New("Reference Unique Grains", "ReferenceUniqueArrayName", getReferenceUniqueArrayName(), FilterParameter::CreatedArray));
+  parameters.push_back(StringFilterParameter::New("Moving Unique Grains", "MovingUniqueArrayName", getMovingUniqueArrayName(), FilterParameter::CreatedArray));
 
   QStringList linkedProps;
   linkedProps<<"OrientationTolerance"<<"ReferenceQuatsArrayPath"<<"ReferencePhasesArrayPath"<<"ReferenceCrystalStructuresArrayPath"<<"MovingQuatsArrayPath"<<"MovingPhasesArrayPath"<<"MovingCrystalStructuresArrayPath";
-  parameters.push_back(LinkedBooleanFilterParameter::New("Require Orientation Match", "UseOrientations", getUseOrientations(), linkedProps, false));
-  parameters.push_back(FilterParameter::New("Orientation Tolerance Angle (degrees)", "OrientationTolerance", FilterParameterWidgetType::DoubleWidget, getOrientationTolerance(), false, ""));
-  parameters.push_back(FilterParameter::New("Reference Features Average Quats", "ReferenceQuatsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferenceQuatsArrayPath(), false, ""));
-  parameters.push_back(FilterParameter::New("Reference Features Phases", "ReferencePhasesArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferencePhasesArrayPath(), false, ""));
-  parameters.push_back(FilterParameter::New("Reference Features Crystal Structures", "ReferenceCrystalStructuresArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferenceCrystalStructuresArrayPath(), false, ""));
-  parameters.push_back(FilterParameter::New("Moving Features Average Quats", "MovingQuatsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getMovingQuatsArrayPath(), false, ""));
-  parameters.push_back(FilterParameter::New("Moving Features Phases", "MovingPhasesArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getMovingPhasesArrayPath(), false, ""));
-  parameters.push_back(FilterParameter::New("Moving Features Crystal Structures", "MovingCrystalStructuresArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getMovingCrystalStructuresArrayPath(), false, ""));
+  parameters.push_back(LinkedBooleanFilterParameter::New("Require Orientation Match", "UseOrientations", getUseOrientations(), linkedProps, FilterParameter::Parameter));
+  parameters.push_back(DoubleFilterParameter::New("Orientation Tolerance Angle (degrees)", "OrientationTolerance", getOrientationTolerance(), FilterParameter::Parameter));
+  
+  parameters.push_back(DataArraySelectionFilterParameter::New("Reference Features Average Quats", "ReferenceQuatsArrayPath", getReferenceQuatsArrayPath(), FilterParameter::RequiredArray));
+  parameters.push_back(DataArraySelectionFilterParameter::New("Moving Features Average Quats", "MovingQuatsArrayPath", getMovingQuatsArrayPath(), FilterParameter::RequiredArray));
+  
+  parameters.push_back(DataArraySelectionFilterParameter::New("Reference Features Phases", "ReferencePhasesArrayPath", getReferencePhasesArrayPath(), FilterParameter::RequiredArray));
+  parameters.push_back(DataArraySelectionFilterParameter::New("Moving Features Phases", "MovingPhasesArrayPath", getMovingPhasesArrayPath(), FilterParameter::RequiredArray));
+ 
+  parameters.push_back(DataArraySelectionFilterParameter::New("Reference Features Crystal Structures", "ReferenceCrystalStructuresArrayPath", getReferenceCrystalStructuresArrayPath(), FilterParameter::RequiredArray));
+  parameters.push_back(DataArraySelectionFilterParameter::New("Moving Features Crystal Structures", "MovingCrystalStructuresArrayPath", getMovingCrystalStructuresArrayPath(), FilterParameter::RequiredArray));
   setFilterParameters(parameters);
 }
 
@@ -126,6 +133,7 @@ void MatchFeatureIds::readFilterParameters(AbstractFilterParametersReader* reade
   setMovingQuatsArrayPath( reader->readDataArrayPath( "MovingQuatsArrayPath", getMovingQuatsArrayPath() ) );
   setMovingPhasesArrayPath( reader->readDataArrayPath( "MovingPhasesArrayPath", getMovingPhasesArrayPath() ) );
   setMovingCrystalStructuresArrayPath( reader->readDataArrayPath( "MovingCrystalStructuresArrayPath", getMovingCrystalStructuresArrayPath() ) );
+  
   reader->closeFilterGroup();
 }
 
@@ -164,70 +172,89 @@ int MatchFeatureIds::writeFilterParameters(AbstractFilterParametersWriter* write
 // -----------------------------------------------------------------------------
 void MatchFeatureIds::dataCheck()
 {
-  DataArrayPath tempPath;
   setErrorCondition(0);
 
+  //required attribute matricies
+  AttributeMatrix::Pointer refCellFeatAttrMat = getDataContainerArray()->getPrereqAttributeMatrixFromPath<AbstractFilter>(this, getReferenceCellFeatureAttributeMatrixPath(), -303);
+  AttributeMatrix::Pointer moveCellFeatAttrMat = getDataContainerArray()->getPrereqAttributeMatrixFromPath<AbstractFilter>(this, getMovingCellFeatureAttributeMatrixPath(), -303);
+  if(getErrorCondition() < 0) return;
+
+  if(DREAM3D::AttributeMatrixType::CellFeature !=refCellFeatAttrMat->getType() )
+    notifyErrorMessage(getHumanLabel(), "'Reference Cell Feature Attribute Matrix' must be of type CellFeature", -1000);
+  if(DREAM3D::AttributeMatrixType::CellFeature !=moveCellFeatAttrMat->getType() )
+    notifyErrorMessage(getHumanLabel(), "'Moving Cell Feature Attribute Matrix' must be of type CellFeature", -1000);
+  if(getReferenceCellFeatureAttributeMatrixPath() == getMovingCellFeatureAttributeMatrixPath())
+    notifyErrorMessage(getHumanLabel(), "'Moving Cell Feature Attribute Matrix' and 'Reference Cell Feature Attribute Matrix' must be different", -1001);
+  if(getErrorCondition() < 0) return;
+
+  //required arrays
   QVector<size_t> dims(1, 1);
-  m_ReferenceFeatureIdsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<int32_t>, AbstractFilter>(this, getReferenceFeatureIdsArrayPath(), dims); /* Assigns the shared_ptr<> to an instance variable that is a weak_ptr<> */
-  if( NULL != m_ReferenceFeatureIdsPtr.lock().get() ) /* Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object */
-  { m_ReferenceFeatureIds = m_ReferenceFeatureIdsPtr.lock()->getPointer(0); } /* Now assign the raw pointer to data from the DataArray<T> object */
-  m_MovingFeatureIdsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<int32_t>, AbstractFilter>(this, getMovingFeatureIdsArrayPath(), dims); /* Assigns the shared_ptr<> to an instance variable that is a weak_ptr<> */
-  if( NULL != m_MovingFeatureIdsPtr.lock().get() ) /* Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object */
-  { m_MovingFeatureIds = m_MovingFeatureIdsPtr.lock()->getPointer(0); } /* Now assign the raw pointer to data from the DataArray<T> object */
+  QVector<DataArrayPath> referenceDataArrayPaths, movingDataArrayPaths;
+  m_ReferenceFeatureIdsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<int32_t>, AbstractFilter>(this, getReferenceFeatureIdsArrayPath(), dims);
+  if( NULL != m_ReferenceFeatureIdsPtr.lock().get() )
+  { m_ReferenceFeatureIds = m_ReferenceFeatureIdsPtr.lock()->getPointer(0); }
+  if(getErrorCondition() >= 0) { referenceDataArrayPaths.push_back(getReferenceFeatureIdsArrayPath()); }
+  
+  m_MovingFeatureIdsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<int32_t>, AbstractFilter>(this, getMovingFeatureIdsArrayPath(), dims);
+  if( NULL != m_MovingFeatureIdsPtr.lock().get() )
+  { m_MovingFeatureIds = m_MovingFeatureIdsPtr.lock()->getPointer(0); }
+  if(getErrorCondition() >= 0) { movingDataArrayPaths.push_back(getMovingFeatureIdsArrayPath()); }
 
-  tempPath.update(getMovingCellFeatureAttributeMatrixPath().getDataContainerName(), getMovingCellFeatureAttributeMatrixPath().getAttributeMatrixName(), getOverlapArrayName() );
-  m_OverlapPtr = getDataContainerArray()->createNonPrereqArrayFromPath<DataArray<float>, AbstractFilter, float>(this, tempPath, 0, dims); /* Assigns the shared_ptr<> to an instance variable that is a weak_ptr<> */
-  if( NULL != m_OverlapPtr.lock().get() ) /* Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object */
-  { m_Overlap = m_OverlapPtr.lock()->getPointer(0); } /* Now assign the raw pointer to data from the DataArray<T> object */
-
-  tempPath.update(getReferenceCellFeatureAttributeMatrixPath().getDataContainerName(), getReferenceCellFeatureAttributeMatrixPath().getAttributeMatrixName(), getReferenceUniqueArrayName() );
-  m_ReferenceUniquePtr = getDataContainerArray()->createNonPrereqArrayFromPath<DataArray<bool>, AbstractFilter, bool>(this, tempPath, 0, dims); /* Assigns the shared_ptr<> to an instance variable that is a weak_ptr<> */
-  if( NULL != m_ReferenceUniquePtr.lock().get() ) /* Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object */
-  { m_ReferenceUnique = m_ReferenceUniquePtr.lock()->getPointer(0); } /* Now assign the raw pointer to data from the DataArray<T> object */
-
-  tempPath.update(getMovingCellFeatureAttributeMatrixPath().getDataContainerName(), getMovingCellFeatureAttributeMatrixPath().getAttributeMatrixName(), getMovingUniqueArrayName() );
-  m_MovingUniquePtr = getDataContainerArray()->createNonPrereqArrayFromPath<DataArray<bool>, AbstractFilter, bool>(this, tempPath, 0, dims); /* Assigns the shared_ptr<> to an instance variable that is a weak_ptr<> */
-  if( NULL != m_MovingUniquePtr.lock().get() ) /* Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object */
-  { m_MovingUnique = m_MovingUniquePtr.lock()->getPointer(0); } /* Now assign the raw pointer to data from the DataArray<T> object */
+  if(getReferenceFeatureIdsArrayPath() == getMovingCellFeatureAttributeMatrixPath())
+    notifyErrorMessage(getHumanLabel(), "'Moving Feature Ids' and 'Reference Feature Ids' must be different", -1001);
 
   if(getUseOrientations())
   {
     dims[0]=4;
-    m_ReferenceQuatsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<float>, AbstractFilter>(this, getReferenceQuatsArrayPath(), dims); /* Assigns the shared_ptr<> to an instance variable that is a weak_ptr<> */
-    if( NULL != m_ReferenceQuatsPtr.lock().get() ) /* Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object */
-    { m_ReferenceQuats = m_ReferenceQuatsPtr.lock()->getPointer(0); } /* Now assign the raw pointer to data from the DataArray<T> object */
-    m_MovingQuatsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<float>, AbstractFilter>(this, getMovingQuatsArrayPath(), dims); /* Assigns the shared_ptr<> to an instance variable that is a weak_ptr<> */
-    if( NULL != m_MovingQuatsPtr.lock().get() ) /* Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object */
-    { m_MovingQuats = m_MovingQuatsPtr.lock()->getPointer(0); } /* Now assign the raw pointer to data from the DataArray<T> object */
+    m_ReferenceQuatsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<float>, AbstractFilter>(this, getReferenceQuatsArrayPath(), dims);
+    if( NULL != m_ReferenceQuatsPtr.lock().get() )
+    { m_ReferenceQuats = m_ReferenceQuatsPtr.lock()->getPointer(0); }
+    if(getErrorCondition() >= 0) { referenceDataArrayPaths.push_back(getReferenceQuatsArrayPath()); }
+    
+    m_MovingQuatsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<float>, AbstractFilter>(this, getMovingQuatsArrayPath(), dims);
+    if( NULL != m_MovingQuatsPtr.lock().get() )
+    { m_MovingQuats = m_MovingQuatsPtr.lock()->getPointer(0); }
+    if(getErrorCondition() >= 0) { movingDataArrayPaths.push_back(getMovingQuatsArrayPath()); }
 
     dims[0]=1;
-    m_ReferencePhasesPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<int32_t>, AbstractFilter>(this, getReferencePhasesArrayPath(), dims); /* Assigns the shared_ptr<> to an instance variable that is a weak_ptr<> */
-    if( NULL != m_ReferencePhasesPtr.lock().get() ) /* Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object */
-    { m_ReferencePhases = m_ReferencePhasesPtr.lock()->getPointer(0); } /* Now assign the raw pointer to data from the DataArray<T> object */
-    m_MovingPhasesPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<int32_t>, AbstractFilter>(this, getMovingPhasesArrayPath(), dims); /* Assigns the shared_ptr<> to an instance variable that is a weak_ptr<> */
-    if( NULL != m_MovingPhasesPtr.lock().get() ) /* Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object */
-    { m_MovingPhases = m_MovingPhasesPtr.lock()->getPointer(0); } /* Now assign the raw pointer to data from the DataArray<T> object */
+    m_ReferencePhasesPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<int32_t>, AbstractFilter>(this, getReferencePhasesArrayPath(), dims);
+    if( NULL != m_ReferencePhasesPtr.lock().get() )
+    { m_ReferencePhases = m_ReferencePhasesPtr.lock()->getPointer(0); }
+    if(getErrorCondition() >= 0) { referenceDataArrayPaths.push_back(getReferencePhasesArrayPath()); }
+    
+    m_MovingPhasesPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<int32_t>, AbstractFilter>(this, getMovingPhasesArrayPath(), dims);
+    if( NULL != m_MovingPhasesPtr.lock().get() )
+    { m_MovingPhases = m_MovingPhasesPtr.lock()->getPointer(0); }
+    if(getErrorCondition() >= 0) { movingDataArrayPaths.push_back(getMovingPhasesArrayPath()); }
 
-    m_ReferenceCrystalStructuresPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<unsigned int>, AbstractFilter>(this, getReferenceCrystalStructuresArrayPath(), dims); /* Assigns the shared_ptr<> to an instance variable that is a weak_ptr<> */
-    if( NULL != m_ReferenceCrystalStructuresPtr.lock().get() ) /* Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object */
-    { m_ReferenceCrystalStructures = m_ReferenceCrystalStructuresPtr.lock()->getPointer(0); } /* Now assign the raw pointer to data from the DataArray<T> object */
-    m_MovingCrystalStructuresPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<unsigned int>, AbstractFilter>(this, getMovingCrystalStructuresArrayPath(), dims); /* Assigns the shared_ptr<> to an instance variable that is a weak_ptr<> */
-    if( NULL != m_MovingCrystalStructuresPtr.lock().get() ) /* Validate the Weak Pointer wraps a non-NULL pointer to a DataArray<T> object */
-    { m_MovingCrystalStructures = m_MovingCrystalStructuresPtr.lock()->getPointer(0); } /* Now assign the raw pointer to data from the DataArray<T> object */
+    m_ReferenceCrystalStructuresPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<unsigned int>, AbstractFilter>(this, getReferenceCrystalStructuresArrayPath(), dims);
+    if( NULL != m_ReferenceCrystalStructuresPtr.lock().get() )
+    { m_ReferenceCrystalStructures = m_ReferenceCrystalStructuresPtr.lock()->getPointer(0); }
+    
+    m_MovingCrystalStructuresPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<unsigned int>, AbstractFilter>(this, getMovingCrystalStructuresArrayPath(), dims);
+    if( NULL != m_MovingCrystalStructuresPtr.lock().get() )
+    { m_MovingCrystalStructures = m_MovingCrystalStructuresPtr.lock()->getPointer(0); }
   }
+  getDataContainerArray()->validateNumberOfTuples<AbstractFilter>(this, referenceDataArrayPaths);
+  getDataContainerArray()->validateNumberOfTuples<AbstractFilter>(this, movingDataArrayPaths);
+  if(getErrorCondition() < 0) return;
 
-  //make sure the selected cell feature attribute matricies are of the correct type
-  AttributeMatrix::Pointer refCellFeatAttrMat = getDataContainerArray()->getPrereqAttributeMatrixFromPath<AbstractFilter>(this, getReferenceCellFeatureAttributeMatrixPath(), -303);
-  AttributeMatrix::Pointer moveCellFeatAttrMat = getDataContainerArray()->getPrereqAttributeMatrixFromPath<AbstractFilter>(this, getMovingCellFeatureAttributeMatrixPath(), -303);
+  //created arrays
+  DataArrayPath tempPath;
+  tempPath.update(getMovingCellFeatureAttributeMatrixPath().getDataContainerName(), getMovingCellFeatureAttributeMatrixPath().getAttributeMatrixName(), getOverlapArrayName() );
+  m_OverlapPtr = getDataContainerArray()->createNonPrereqArrayFromPath<DataArray<float>, AbstractFilter, float>(this, tempPath, 0, dims);
+  if( NULL != m_OverlapPtr.lock().get() )
+  { m_Overlap = m_OverlapPtr.lock()->getPointer(0); }
 
-  if(DREAM3D::AttributeMatrixType::CellFeature !=refCellFeatAttrMat->getType() )
-  {
-    notifyErrorMessage(getHumanLabel(), "'Reference Cell Feature Attribute Matrix' must be of type CellFeature", -1000);
-  }
-  if(DREAM3D::AttributeMatrixType::CellFeature !=moveCellFeatAttrMat->getType() )
-  {
-    notifyErrorMessage(getHumanLabel(), "'Moving Cell Feature Attribute Matrix' must be of type CellFeature", -1000);
-  }
+  tempPath.update(getReferenceCellFeatureAttributeMatrixPath().getDataContainerName(), getReferenceCellFeatureAttributeMatrixPath().getAttributeMatrixName(), getReferenceUniqueArrayName() );
+  m_ReferenceUniquePtr = getDataContainerArray()->createNonPrereqArrayFromPath<DataArray<bool>, AbstractFilter, bool>(this, tempPath, 0, dims);
+  if( NULL != m_ReferenceUniquePtr.lock().get() )
+  { m_ReferenceUnique = m_ReferenceUniquePtr.lock()->getPointer(0); }
+
+  tempPath.update(getMovingCellFeatureAttributeMatrixPath().getDataContainerName(), getMovingCellFeatureAttributeMatrixPath().getAttributeMatrixName(), getMovingUniqueArrayName() );
+  m_MovingUniquePtr = getDataContainerArray()->createNonPrereqArrayFromPath<DataArray<bool>, AbstractFilter, bool>(this, tempPath, 0, dims);
+  if( NULL != m_MovingUniquePtr.lock().get() )
+  { m_MovingUnique = m_MovingUniquePtr.lock()->getPointer(0); }
 }
 
 // -----------------------------------------------------------------------------
@@ -247,58 +274,13 @@ void MatchFeatureIds::preflight()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-const QString MatchFeatureIds::getCompiledLibraryName()
-{
-  return DatasetMerging::DatasetMergingBaseName;
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-const QString MatchFeatureIds::getGroupName()
-{
-  return DatasetMerging::DatasetMergingPluginDisplayName;
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-const QString MatchFeatureIds::getHumanLabel()
-{
-  return "Match Feature Ids";
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-const QString MatchFeatureIds::getSubGroupName()
-{
-  return DREAM3D::FilterSubGroups::MorphologicalFilters;
-}
-
-// custom class to handle holding of pair data
-class OverlapPair {
- public:
-  int referenceId;
-  int movingId;
-  float index;
-  
-    // I'm defining the < operator 'backwards' ---> std::sort from lowest to highest cost (so I can pop_back)
-    const bool operator< (const OverlapPair &other) const
-    {
-      return index < other.index;
-    } 
-};
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
 void MatchFeatureIds::execute()
 {
-  int err = 0;
+  setErrorCondition(0);
   dataCheck();
   if(getErrorCondition() < 0) { return; }
-  setErrorCondition(0);
+
+  if (getCancel() == true) { return; }
 
   int64_t totalPoints = m_ReferenceFeatureIdsPtr.lock()->getNumberOfTuples();
   QuatF* reference_quats = reinterpret_cast<QuatF*>(m_ReferenceQuats);
@@ -308,13 +290,11 @@ void MatchFeatureIds::execute()
   int maxMovingId = m_MovingUniquePtr.lock()->getNumberOfTuples();
 
   // create array to hold grain overlaps (ignoring grain 0)
-  std::vector<int> intersections(maxReferenceId*maxMovingId, 0);
+  std::vector<int> intersections(maxReferenceId * maxMovingId, 0);
 
   // create arrays to hold grain volumes
   std::vector<int> referenceVolumes(maxReferenceId, 0);
-  std::vector<int> movingVolumes(maxMovingId, 0);
-
-  //initially everything but grain 0 unique (no grains have been matched)
+  std::vector<int> movingVolumes(maxMovingId, 0);//initially everything but grain 0 unique (no grains have been matched)
   m_ReferenceUnique[0] = false;
   m_MovingUnique[0] = false;
   m_Overlap[0] = false;
@@ -342,6 +322,15 @@ void MatchFeatureIds::execute()
       intersections[movingId*maxReferenceId+referenceId]++;
     }  
   }
+
+  // custom class to holding pair data
+  class OverlapPair {
+   public:
+    int referenceId;
+    int movingId;
+    float index;
+    const bool operator< (const OverlapPair &other) const {return index < other.index;} 
+  };
 
   // compute selected metric for each pair of overlapping grains
   std::vector<OverlapPair> featureOverlaps;
@@ -439,6 +428,7 @@ void MatchFeatureIds::execute()
     featureOverlaps.pop_back();
   }
 
+
   //if all the moving grains haven't been assigned append to higher grain ids
   int index = maxReferenceId;
   for(size_t i = 1; i < maxMovingId; i++)
@@ -473,7 +463,6 @@ void MatchFeatureIds::execute()
     cellFeatureAttrMat->addAttributeArray(pNew->getName(), pNew);
   }
 
-  /* Let the GUI know we are done with this filter */
   notifyStatusMessage(getHumanLabel(), "Complete");
 }
 
@@ -482,26 +471,35 @@ void MatchFeatureIds::execute()
 // -----------------------------------------------------------------------------
 AbstractFilter::Pointer MatchFeatureIds::newFilterInstance(bool copyFilterParameters)
 {
-  /*
-  * write code to optionally copy the filter parameters from the current filter into the new instance
-  */
   MatchFeatureIds::Pointer filter = MatchFeatureIds::New();
   if(true == copyFilterParameters)
   {
-    /* If the filter uses all the standard Filter Parameter Widgets you can probabaly get
-     * away with using this method to copy the filter parameters from the current instance
-     * into the new instance
-     */
     copyFilterParameterInstanceVariables(filter.get());
-    /* If your filter is using a lot of custom FilterParameterWidgets @see ReadH5Ebsd then you
-     * may need to copy each filter parameter explicitly plus any other instance variables that
-     * are needed into the new instance. Here is some example code from ReadH5Ebsd
-     */
-    //    DREAM3D_COPY_INSTANCEVAR(OutputFile)
-    //    DREAM3D_COPY_INSTANCEVAR(ZStartIndex)
-    //    DREAM3D_COPY_INSTANCEVAR(ZEndIndex)
-    //    DREAM3D_COPY_INSTANCEVAR(ZResolution)
   }
   return filter;
 }
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+const QString MatchFeatureIds::getCompiledLibraryName()
+{ return DataFusionConstants::DataFusionBaseName; }
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+const QString MatchFeatureIds::getGroupName()
+{ return DREAM3D::FilterGroups::Unsupported; }
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+const QString MatchFeatureIds::getHumanLabel()
+{ return "Match Feature Ids"; }
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+const QString MatchFeatureIds::getSubGroupName()
+{ return "DataFusion"; }
 

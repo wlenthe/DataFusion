@@ -1,0 +1,18 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+  <title>DataFusion Description</title>
+</head>
+<body>
+<h3>DataFusion Plugin</h3>
+
+<p>This plugin implements filters required to merge 2 datasets of the same sample onto a single shared sampling grid, match the feature ids of their segmentations, and align their orientation reference frames using the algorithms described in [1].</p>
+
+<h4>Citations</h4>
+<p>
+[1] Lenthe, W. C., Echlin, M. P., Trenkle, A., Syha, M., Gumbsch, P., & Pollock, T. M. (2015). Quantitative voxel-to-voxel comparison of TriBeam and DCT strontium titanate three-dimensional data sets. Journal of Applied Crystallography, 48(4), 1034-1046. 
+<a href="http://dx.doi.org/10.1107/S1600576715009231">doi:10.1107/S1600576715009231</a>
+</p>
+</body>
+</html>

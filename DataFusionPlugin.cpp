@@ -1,9 +1,8 @@
 /*
- * Your License or Copyright Information can go here
+ * Your License or Copyright can go here
  */
 
-
-#include "DatasetMergingPlugin.h"
+#include "DataFusionPlugin.h"
 
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
@@ -12,28 +11,21 @@
 #include "DREAM3DLib/Common/IFilterFactory.hpp"
 #include "DREAM3DLib/Common/FilterFactory.hpp"
 
-
-#include "DatasetMerging/moc_DatasetMergingPlugin.cpp"
-
-namespace Detail
-{
-  const QString DatasetMergingPluginFile("DatasetMergingPlugin");
-  const QString DatasetMergingPluginDisplayName("DatasetMerging");
-  const QString DatasetMergingPluginBaseName("DatasetMergingPlugin");
-}
+#include "DataFusion/DataFusionConstants.h"
+#include "DataFusion/moc_DataFusionPlugin.cpp"
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-DatasetMergingPlugin::DatasetMergingPlugin() :
-m_Version("Version Number"),                            // Initialize DatasetMerging's Version Number Here
-m_CompatibilityVersion("Compatibility Version Number"), // Initialize DatasetMerging's Compatibility Version Number Here
-m_Vendor("Vendor Name"),                                // Initialize DatasetMerging's Vendor Name Here
+DataFusionPlugin::DataFusionPlugin() :
+m_Version("0.1.0"),                            // Initialize DataFusion's Version Number Here
+m_CompatibilityVersion("0.1.0"), // Initialize DataFusion's Compatibility Version Number Here
+m_Vendor("Vendor Name"),                                // Initialize DataFusion's Vendor Name Here
 m_URL("URL"),                                           // Initialize Company URL Here
-m_Location("Location"),                                 // Initialize Company Location Here
-m_Description("Description"),                           // Initialize DatasetMerging's Description Here
-m_Copyright("Copyright"),                               // Initialize DatasetMerging's Copyright Here
-m_Filters(QList<QString>()),                        // Initialize DatasetMerging's List of Dependencies Here
+m_Location("Location"),                                 // Initialize DataFusion library Location Here
+m_Description("Description"),                           // Initialize DataFusion's Description Here
+m_Copyright("Copyright"),                               // Initialize DataFusion's Copyright Here
+m_Filters(QList<QString>()),                        // Initialize DataFusion's List of Dependencies Here
 m_DidLoad(false)
 {
 
@@ -42,22 +34,22 @@ m_DidLoad(false)
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-DatasetMergingPlugin::~DatasetMergingPlugin()
+DataFusionPlugin::~DataFusionPlugin()
 {
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-QString DatasetMergingPlugin::getPluginName()
+QString DataFusionPlugin::getPluginName()
 {
-  return (Detail::DatasetMergingPluginDisplayName);
+  return (DataFusionConstants::DataFusionPluginDisplayName);
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-QString DatasetMergingPlugin::getVersion()
+QString DataFusionPlugin::getVersion()
 {
   return m_Version;
 }
@@ -65,7 +57,7 @@ QString DatasetMergingPlugin::getVersion()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-QString DatasetMergingPlugin::getCompatibilityVersion()
+QString DataFusionPlugin::getCompatibilityVersion()
 {
   return m_CompatibilityVersion;
 }
@@ -73,7 +65,7 @@ QString DatasetMergingPlugin::getCompatibilityVersion()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-QString DatasetMergingPlugin::getVendor()
+QString DataFusionPlugin::getVendor()
 {
   return m_Vendor;
 }
@@ -81,7 +73,7 @@ QString DatasetMergingPlugin::getVendor()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-QString DatasetMergingPlugin::getURL()
+QString DataFusionPlugin::getURL()
 {
   return m_URL;
 }
@@ -89,7 +81,7 @@ QString DatasetMergingPlugin::getURL()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-QString DatasetMergingPlugin::getLocation()
+QString DataFusionPlugin::getLocation()
 {
   return m_Location;
 }
@@ -97,12 +89,12 @@ QString DatasetMergingPlugin::getLocation()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-QString DatasetMergingPlugin::getDescription()
+QString DataFusionPlugin::getDescription()
 {
   /* PLEASE UPDATE YOUR PLUGIN'S DESCRIPTION FILE.
-  It is located at DatasetMerging/Resources/DatasetMerging/DatasetMergingDescription.txt */
+  It is located at DataFusion/Resources/DataFusion/DataFusionDescription.txt */
 
-  QFile licenseFile(":/DatasetMerging/DatasetMergingDescription.txt");
+  QFile licenseFile(":/DataFusion/DataFusionDescription.txt");
   QFileInfo licenseFileInfo(licenseFile);
   QString text = "<<--Description was not read-->>";
 
@@ -120,7 +112,7 @@ QString DatasetMergingPlugin::getDescription()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-QString DatasetMergingPlugin::getCopyright()
+QString DataFusionPlugin::getCopyright()
 {
   return m_Copyright;
 }
@@ -128,12 +120,12 @@ QString DatasetMergingPlugin::getCopyright()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-QString DatasetMergingPlugin::getLicense()
+QString DataFusionPlugin::getLicense()
 {
   /* PLEASE UPDATE YOUR PLUGIN'S LICENSE FILE.
-  It is located at DatasetMerging/Resources/DatasetMerging/DatasetMergingLicense.txt */
+  It is located at DataFusion/Resources/DataFusion/DataFusionLicense.txt */
 
-  QFile licenseFile(":/DatasetMerging/DatasetMergingLicense.txt");
+  QFile licenseFile(":/DataFusion/DataFusionLicense.txt");
   QFileInfo licenseFileInfo(licenseFile);
   QString text = "<<--License was not read-->>";
 
@@ -151,7 +143,7 @@ QString DatasetMergingPlugin::getLicense()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-QMap<QString, QString> DatasetMergingPlugin::getThirdPartyLicenses()
+QMap<QString, QString> DataFusionPlugin::getThirdPartyLicenses()
 {
   QMap<QString, QString> licenseMap;
   QList<QString> fileStrList;
@@ -181,7 +173,7 @@ QMap<QString, QString> DatasetMergingPlugin::getThirdPartyLicenses()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-bool DatasetMergingPlugin::getDidLoad()
+bool DataFusionPlugin::getDidLoad()
 {
   return m_DidLoad;
 }
@@ -189,7 +181,7 @@ bool DatasetMergingPlugin::getDidLoad()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void DatasetMergingPlugin::setDidLoad(bool didLoad)
+void DataFusionPlugin::setDidLoad(bool didLoad)
 {
   m_DidLoad = didLoad;
 }
@@ -197,7 +189,7 @@ void DatasetMergingPlugin::setDidLoad(bool didLoad)
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void DatasetMergingPlugin::setLocation(QString filePath)
+void DataFusionPlugin::setLocation(QString filePath)
 {
   m_Location = filePath;
 }
@@ -205,20 +197,18 @@ void DatasetMergingPlugin::setLocation(QString filePath)
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void DatasetMergingPlugin::writeSettings(QSettings& prefs)
+void DataFusionPlugin::writeSettings(QSettings& prefs)
 {
-
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void DatasetMergingPlugin::readSettings(QSettings& prefs)
+void DataFusionPlugin::readSettings(QSettings& prefs)
 {
-
 }
 
-#include "DatasetMergingFilters/RegisterKnownFilters.cpp"
+#include "DataFusionFilters/RegisterKnownFilters.cpp"
 
 #include "FilterParameterWidgets/RegisterKnownFilterParameterWidgets.cpp"
 

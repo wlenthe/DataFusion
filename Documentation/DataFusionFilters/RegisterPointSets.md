@@ -1,9 +1,8 @@
-Register Point Sets {#registerpointsets}
-=====
+RegisterPointSets {#registerpointsets}
+=============
 
 ## Group (Subgroup) ##
-DatasetMerging (DatasetMerging)
-
+DataFusion (DataFusion)
 
 ## Description ##
 Given two sets of matched points (e.g. centroids for 2 segmentations with matching feature ids) this filter computes the transformation (from 'moving' to 'reference' points) resulting in the least squares error. If **Use Good Points Arrays** is selected, only points flagged as good in both the moving and reference point set will be considered. If **Weight Pairs** is selected the transformation resulting in the weighted least squares error will be computed. The point sets centered to their centroid prior to calculation of the transformation. For full affine degrees of freedom the transformation is computed directly. For restricted degrees of freedom rotation is computed first (if allowed) then least squares scaling for the computed rotation. The resulting transform is stored as a 4x4 augmented matrix.
@@ -32,20 +31,15 @@ Given two sets of matched points (e.g. centroids for 2 segmentations with matchi
 
 ## Created Arrays ##
 
-| Type | Default Array Name | Description | Comment |
-|------|--------------------|-------------|---------|
-| Int  | SomeName           | ....        | other   |
+| Type | Default Array Name | Description |
+|------|--------------------|-------------|
+| Float  | Transformation  | 4x4 augmented matrix |
 
+## License & Copyright ##
 
+Please see the description file distributed with this plugin.
 
-## Authors: ##
+## DREAM3D Mailing Lists ##
 
-**Copyright:** Who holds the copyright for the code
-
-**Contact Info:** email address
-
-**Version:** x.y.z
-
-**License:**  What is the license for this code
-
-
+If you need more help with a filter, please consider asking your question on the DREAM3D Users mailing list:
+https://groups.google.com/forum/?hl=en#!forum/dream3d-users

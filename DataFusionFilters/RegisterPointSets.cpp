@@ -1,12 +1,21 @@
 /*
- * Your License or Copyright Information can go here
+ * Your License or Copyright can go here
  */
 
 #include "RegisterPointSets.h"
 
-#include <QtCore/QString>
+#include "DREAM3DLib/Common/Constants.h"
+#include "DREAM3DLib/FilterParameters/AbstractFilterParametersReader.h"
+#include "DREAM3DLib/FilterParameters/AbstractFilterParametersWriter.h"
 
-#include "DatasetMerging/DatasetMergingConstants.h"
+#include "DREAM3DLib/FilterParameters/BooleanFilterParameter.h"
+#include "DREAM3DLib/FilterParameters/LinkedBooleanFilterParameter.h"
+#include "DREAM3DLib/FilterParameters/LinkedChoicesFilterParameter.h"
+#include "DREAM3DLib/FilterParameters/DataArraySelectionFilterParameter.h"
+#include "DREAM3DLib/FilterParameters/StringFilterParameter.h"
+#include "DREAM3DLib/FilterParameters/DataContainerSelectionFilterParameter.h"
+
+#include "DataFusion/DataFusionConstants.h"
 
 #include <Eigen/Dense>
 #include <Eigen/SVD>
@@ -20,15 +29,10 @@ RegisterPointSets::RegisterPointSets() :
   m_MovingCentroidsArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellFeatureAttributeMatrixName, DREAM3D::FeatureData::Centroids),
   m_ReferenceGoodFeaturesArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellFeatureAttributeMatrixName, DREAM3D::FeatureData::GoodFeatures),
   m_MovingGoodFeaturesArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellFeatureAttributeMatrixName, DREAM3D::FeatureData::GoodFeatures),
-  m_AttributeMatrixName(DatasetMerging::Transformation),
-  m_TransformName(DatasetMerging::Transformation),
-  m_ReferenceCentroidsArrayName(DREAM3D::FeatureData::Centroids),
-  m_MovingCentroidsArrayName(DREAM3D::FeatureData::Centroids),
+  m_AttributeMatrixName(DataFusionConstants::Transformation),
+  m_TransformName(DataFusionConstants::Transformation),
   m_UseGoodPoints(true),
-  m_ReferenceGoodFeaturesArrayName(DREAM3D::FeatureData::GoodFeatures),
-  m_MovingGoodFeaturesArrayName(DREAM3D::FeatureData::GoodFeatures),
   m_UseWeights(true),
-  m_WeightsArrayName(DREAM3D::FeatureData::Volumes),
   m_ReferenceCentroids(NULL),
   m_MovingCentroids(NULL),
   m_ReferenceGoodFeatures(NULL),
@@ -57,48 +61,60 @@ void RegisterPointSets::setupFilterParameters()
 {
   FilterParameterVector parameters;
 
-  parameters.push_back(FilterParameter::New("Transformation Degrees of Freedom", "", FilterParameterWidgetType::SeparatorWidget, "", false));
-  parameters.push_back(FilterParameter::New("Allow Translation", "AllowTranslation", FilterParameterWidgetType::BooleanWidget, getAllowTranslation(), false));
-  parameters.push_back(FilterParameter::New("Allow Rotation", "AllowRotation", FilterParameterWidgetType::BooleanWidget, getAllowRotation(), false));
-  {
-    QStringList linkedProps;
-    linkedProps << "ScalingType";
-    parameters.push_back(LinkedBooleanFilterParameter::New("Allow Scaling", "AllowScaling", getAllowScaling(), linkedProps, false));
-  }
-  {
-    ChoiceFilterParameter::Pointer parameter = ChoiceFilterParameter::New();
-    parameter->setHumanLabel("Scaling Type");
-    parameter->setPropertyName("ScalingType");
-    parameter->setWidgetType(FilterParameterWidgetType::ChoiceWidget);
-    QVector<QString> choices;
-    choices.push_back("Isotropic");
-    choices.push_back("Anisotropic");
-    parameter->setChoices(choices);
-    parameters.push_back(parameter);
-  }
-  parameters.push_back(FilterParameter::New("Allow Shearing", "AllowShearing", FilterParameterWidgetType::BooleanWidget, getAllowShearing(), false));
-  
-  parameters.push_back(FilterParameter::New("Point Set Selection", "", FilterParameterWidgetType::SeparatorWidget, "", false));
-  parameters.push_back(FilterParameter::New("Reference Points", "ReferenceCentroidsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferenceCentroidsArrayPath(), false, ""));
-  parameters.push_back(FilterParameter::New("Moving Points", "MovingCentroidsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getMovingCentroidsArrayPath(), false, ""));
   {
     QStringList linkedProps;
     linkedProps << "ReferenceGoodFeaturesArrayPath" << "MovingGoodFeaturesArrayPath";
-    parameters.push_back(LinkedBooleanFilterParameter::New("Use Good Points Arrays", "UseGoodPoints", getUseGoodPoints(), linkedProps, false));
+    parameters.push_back(LinkedBooleanFilterParameter::New("Use Good Points Arrays", "UseGoodPoints", getUseGoodPoints(), linkedProps, FilterParameter::Parameter));
   }
-  parameters.push_back(FilterParameter::New("Reference Good Points", "ReferenceGoodFeaturesArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getReferenceGoodFeaturesArrayPath(), false, ""));
-  parameters.push_back(FilterParameter::New("Moving Good Points", "MovingGoodFeaturesArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getMovingGoodFeaturesArrayPath(), false, ""));
-
   {
     QStringList linkedProps;
     linkedProps << "WeightsArrayPath";
-    parameters.push_back(LinkedBooleanFilterParameter::New("Weight Pairs", "UseWeights", getUseWeights(), linkedProps, false));
+    parameters.push_back(LinkedBooleanFilterParameter::New("Weight Pairs", "UseWeights", getUseWeights(), linkedProps, FilterParameter::Parameter));
   }
-  parameters.push_back(FilterParameter::New("Weights", "WeightsArrayPath", FilterParameterWidgetType::DataArraySelectionWidget, getWeightsArrayPath(), false, ""));
-  
 
-  parameters.push_back(FilterParameter::New("Output Attribute Matrix Name", "AttributeMatrixName", FilterParameterWidgetType::StringWidget, getAttributeMatrixName(), true, ""));
-  parameters.push_back(FilterParameter::New("Output Array Name", "TransformName", FilterParameterWidgetType::StringWidget, getTransformName(), true, ""));
+  //transform degrees of freedom
+  {
+    QStringList linkedProps;
+    linkedProps << "AllowRotation" << "AllowScaling";
+    parameters.push_back(LinkedBooleanFilterParameter::New("Allow Translation", "AllowTranslation", getAllowTranslation(), linkedProps, FilterParameter::Parameter));
+  }
+  {
+    QStringList linkedProps;
+    linkedProps << "AllowShearing";
+    parameters.push_back(LinkedBooleanFilterParameter::New("Allow Rotation", "AllowRotation", getAllowRotation(), linkedProps, FilterParameter::Parameter));
+  }
+  {
+    QStringList linkedProps;
+    linkedProps << "ScalingType" << "AllowShearing";
+    parameters.push_back(LinkedBooleanFilterParameter::New("Allow Scaling", "AllowScaling", getAllowScaling(), linkedProps, FilterParameter::Parameter));
+  }
+  {
+    QVector<QString> choices;
+      choices.push_back("Isotropic");
+      choices.push_back("Anisotropic");
+    QStringList linkedProps;
+    linkedProps << "AllowShearing";
+    LinkedChoicesFilterParameter::Pointer parameter = LinkedChoicesFilterParameter::New();
+      parameter->setHumanLabel("Scaling Type");
+      parameter->setPropertyName("ScalingType");
+      parameter->setChoices(choices);
+      parameter->setLinkedProperties(linkedProps);
+      parameter->setCategory(FilterParameter::Parameter);
+    parameters.push_back(parameter);
+  }
+  parameters.push_back(BooleanFilterParameter::New("Allow Shearing", "AllowShearing", getAllowShearing(), FilterParameter::Parameter, "", 1));
+  
+  //required arrays
+  parameters.push_back(DataArraySelectionFilterParameter::New("Reference Points", "ReferenceCentroidsArrayPath", getReferenceCentroidsArrayPath(), FilterParameter::RequiredArray));
+  parameters.push_back(DataArraySelectionFilterParameter::New("Moving Points", "MovingCentroidsArrayPath", getMovingCentroidsArrayPath(), FilterParameter::RequiredArray));
+  parameters.push_back(DataArraySelectionFilterParameter::New("Reference Good Points", "ReferenceGoodFeaturesArrayPath", getReferenceGoodFeaturesArrayPath(), FilterParameter::RequiredArray));
+  parameters.push_back(DataArraySelectionFilterParameter::New("Moving Good Points", "MovingGoodFeaturesArrayPath", getMovingGoodFeaturesArrayPath(), FilterParameter::RequiredArray));
+  parameters.push_back(DataArraySelectionFilterParameter::New("Weights", "WeightsArrayPath", getWeightsArrayPath(), FilterParameter::RequiredArray));
+  
+  //created arrays
+  parameters.push_back(StringFilterParameter::New("Output Attribute Matrix Name", "AttributeMatrixName", getAttributeMatrixName(), FilterParameter::CreatedArray));
+  parameters.push_back(StringFilterParameter::New("Output Array Name", "TransformName", getTransformName(), FilterParameter::CreatedArray, 1));
+  
   setFilterParameters(parameters);
 }
 
@@ -158,84 +174,56 @@ void RegisterPointSets::dataCheck()
   setErrorCondition(0);
 
   //make sure degrees of freedom are an allowed combination
-  if(getAllowRotation())
-  {
-    if(!getAllowTranslation())
-    {
-      QString ss = QObject::tr("Rotation Requires Translation");
-      setErrorCondition(-1);
-      notifyErrorMessage(getHumanLabel(), ss, -1);
-    }
-  }
+  if(!getAllowTranslation())
+      notifyErrorMessage(getHumanLabel(), "Translation Required", -1);
+  if(getAllowShearing() && (!getAllowRotation() || !getAllowScaling() || 1 != getScalingType()) )
+      notifyErrorMessage(getHumanLabel(), "Shearing Requires Rotation and Anisotropic Scaling (full affine transformation)", -1);
 
-  if(getAllowShearing())
-  {
-    if(!getAllowRotation())
-    {
-      QString ss = QObject::tr("Shearing Requires Rotation");
-      setErrorCondition(-1);
-      notifyErrorMessage(getHumanLabel(), ss, -1);
-    }
-
-    if(!getAllowScaling() || 0 == getScalingType())
-    {
-      QString ss = QObject::tr("Shearing Requires Anisotropic Scaling");
-      setErrorCondition(-1);
-      notifyErrorMessage(getHumanLabel(), ss, -1);
-    }
-  }
-  if(getErrorCondition() < 0) {return;}
-
-  //get pointers to prereq arrays
+  //required arrays
   QVector<size_t> dims(1, 3);
+  QVector<DataArrayPath> referenceDataArrayPaths, movingDataArrayPaths;
+
   m_ReferenceCentroidsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<float>, AbstractFilter>(this, getReferenceCentroidsArrayPath(), dims);
+  if( NULL != m_ReferenceCentroidsPtr.lock().get() ) m_ReferenceCentroids = m_ReferenceCentroidsPtr.lock()->getPointer(0);
+  if(getErrorCondition() >= 0) referenceDataArrayPaths.push_back(getReferenceCentroidsArrayPath());
+
   m_MovingCentroidsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<float>, AbstractFilter>(this, getMovingCentroidsArrayPath(), dims);
+  if( NULL != m_MovingCentroidsPtr.lock().get() ) m_MovingCentroids = m_MovingCentroidsPtr.lock()->getPointer(0);
+  if(getErrorCondition() >= 0) movingDataArrayPaths.push_back(getMovingCentroidsArrayPath());
 
+  //centroids must belong to imagegeometery
+  if(getErrorCondition() < 0) return;
+  if(DREAM3D::GeometryType::ImageGeometry != getDataContainerArray()->getDataContainer(getReferenceCentroidsArrayPath().getDataContainerName())->getGeometry()->getGeometryType())
+    notifyErrorMessage(getHumanLabel(), "Rectilinear grid geometry required for Reference Atrribute Matrix.", -390);
+  
+  if(DREAM3D::GeometryType::ImageGeometry != getDataContainerArray()->getDataContainer(getMovingCentroidsArrayPath().getDataContainerName())->getGeometry()->getGeometryType())
+    notifyErrorMessage(getHumanLabel(), "Rectilinear grid geometry required for Moving Atrribute Matrix.", -390);
+
+  dims[0] = 1;
   if(getUseGoodPoints())
   {
-    dims[0] = 1;
     m_ReferenceGoodFeaturesPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<bool>, AbstractFilter>(this, getReferenceGoodFeaturesArrayPath(), dims);
+    if(getErrorCondition() >= 0) referenceDataArrayPaths.push_back(getReferenceGoodFeaturesArrayPath());
+    if( NULL != m_ReferenceGoodFeaturesPtr.lock().get() ) m_ReferenceGoodFeatures = m_ReferenceGoodFeaturesPtr.lock()->getPointer(0);
+    
     m_MovingGoodFeaturesPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<bool>, AbstractFilter>(this, getMovingGoodFeaturesArrayPath(), dims);
+    if(getErrorCondition() >= 0) movingDataArrayPaths.push_back(getMovingGoodFeaturesArrayPath());
+    if( NULL != m_MovingGoodFeaturesPtr.lock().get() ) m_MovingGoodFeatures = m_MovingGoodFeaturesPtr.lock()->getPointer(0);
   }
+
   if(getUseWeights())
   {
-    dims[0] = 1;
     m_WeightsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<float>, AbstractFilter>(this, getWeightsArrayPath(), dims);
-  }
-  if(getErrorCondition() < 0) {return;}
-
-  //assign pointers
-  if( NULL != m_ReferenceCentroidsPtr.lock().get() )
-  {
-    m_ReferenceCentroids = m_ReferenceCentroidsPtr.lock()->getPointer(0);
-  }
-  if( NULL != m_MovingCentroidsPtr.lock().get() )
-  {
-    m_MovingCentroids = m_MovingCentroidsPtr.lock()->getPointer(0);
+    if(getErrorCondition() >= 0) referenceDataArrayPaths.push_back(getWeightsArrayPath());
+    if( NULL != m_WeightsPtr.lock().get() ) m_Weights = m_WeightsPtr.lock()->getPointer(0);
   }
 
-  if(getUseGoodPoints())
-  {
-    if( NULL != m_ReferenceGoodFeaturesPtr.lock().get() )
-    {
-      m_ReferenceGoodFeatures = m_ReferenceGoodFeaturesPtr.lock()->getPointer(0);
-    }
-    if( NULL != m_MovingGoodFeaturesPtr.lock().get() )
-    {
-      m_MovingGoodFeatures = m_MovingGoodFeaturesPtr.lock()->getPointer(0);
-    }
-  }
+  getDataContainerArray()->validateNumberOfTuples<AbstractFilter>(this, referenceDataArrayPaths);
+  getDataContainerArray()->validateNumberOfTuples<AbstractFilter>(this, movingDataArrayPaths);
+  if(getErrorCondition() < 0) return;
 
-  if(getUseWeights())
-  {
-    if( NULL != m_WeightsPtr.lock().get() )
-    {
-      m_Weights = m_WeightsPtr.lock()->getPointer(0);
-    }
-  }
-
-  //create metadata attribute matrix in reference data container to hold transformation
-  QVector<size_t> tDims(1, 1);//1 spot (single transformation)
+  //created arrays
+    QVector<size_t> tDims(1, 1);//1 spot (single transformation)
   DataContainer::Pointer m = getDataContainerArray()->getPrereqDataContainer<AbstractFilter>(this, getReferenceCentroidsArrayPath().getDataContainerName());
   AttributeMatrix::Pointer attrMat = m->createNonPrereqAttributeMatrix<AbstractFilter>(this, getAttributeMatrixName(), tDims, DREAM3D::AttributeMatrixType::MetaData);
    
@@ -244,10 +232,7 @@ void RegisterPointSets::dataCheck()
   QVector<size_t> transDims(2, 4);//4x4 array
   tempPath.update(getReferenceCentroidsArrayPath().getDataContainerName(), getAttributeMatrixName(), getTransformName() );
   m_TransformPtr = getDataContainerArray()->createNonPrereqArrayFromPath<DataArray<float>, AbstractFilter, float>(this, tempPath, 0, transDims);
-  if( NULL != m_TransformPtr.lock().get() )
-  {
-    m_Transform = m_TransformPtr.lock()->getPointer(0);
-  }
+  if( NULL != m_TransformPtr.lock().get() ) m_Transform = m_TransformPtr.lock()->getPointer(0);
 }
 
 // -----------------------------------------------------------------------------
@@ -267,47 +252,25 @@ void RegisterPointSets::preflight()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-const QString RegisterPointSets::getCompiledLibraryName()
-{
-  return DatasetMerging::DatasetMergingBaseName;
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-const QString RegisterPointSets::getGroupName()
-{
-  return DatasetMerging::DatasetMergingPluginDisplayName;
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-const QString RegisterPointSets::getHumanLabel()
-{
-  return "Register Point Sets";
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-const QString RegisterPointSets::getSubGroupName()
-{
-  return DREAM3D::FilterSubGroups::AlignmentFilters;
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
 void RegisterPointSets::execute()
 {
-  int err = 0;
-  // typically run your dataCheck function to make sure you can get that far and all your variables are initialized
-  dataCheck();
-  // Check to make sure you made it through the data check. Errors would have been reported already so if something
-  // happens to fail in the dataCheck() then we simply return
-  if(getErrorCondition() < 0) { return; }
   setErrorCondition(0);
+  dataCheck();
+  if(getErrorCondition() < 0) { return; }
+
+  if (getCancel() == true) { return; }
+
+  //check degrees of freedom  
+  if(!getAllowTranslation())
+      notifyErrorMessage(getHumanLabel(), "Translation Required", -1);
+  bool affine = false;
+  if(getAllowShearing())
+  {
+    if(getAllowRotation() && getAllowScaling() && 1 == getScalingType())
+      affine = true;
+    else
+      notifyErrorMessage(getHumanLabel(), "Shearing Requires Rotation and Anisotropic Scaling (full affine transformation)", -1);
+  }
 
   //fill transformation with identity matrix by default (in case filter exits early)
   m_Transform[0] = 1;
@@ -330,52 +293,45 @@ void RegisterPointSets::execute()
   m_Transform[14] = 0;
   m_Transform[15] = 1;
 
-  //create list of matched point
+  //create list of matched points
   size_t referenceNumFeatures = m_ReferenceCentroidsPtr.lock()->getNumberOfTuples();
   size_t movingNumFeatures = m_MovingCentroidsPtr.lock()->getNumberOfTuples();
   size_t numFeatures = std::min(referenceNumFeatures, movingNumFeatures);
   std::vector<size_t> sharedFeatures;
+  sharedFeatures.reserve(numFeatures);
+  
   for(size_t i = 0; i < numFeatures; i++)
   {
     //dont add bad points to list
     if(getUseGoodPoints())
     {
       if( !(m_ReferenceGoodFeatures[i] && m_MovingGoodFeatures[i]) )
-      {
         continue;
-      }
     }
     sharedFeatures.push_back(i);
   }
-  size_t numPoints = sharedFeatures.size();
-
-  //behavoir depends on degrees of freedom (t=translation, r=rotation, i=isotropic scaling, a=anisotropic scaling, s=shear)
-  //I'll allow the following combinations (in ~increasing degrees of freedom)
-  //t, ti, ta, tr, tir, tar, tars (full affine)
-  //other possible combinations are possible (eg ts or r) but are either not useful or I don't know how to compute the least squared solution
-  //weighting of points is possible but has been omitted for now
+  numFeatures = sharedFeatures.size();
 
   //create matrix + vector to hold transfomration + translation (default to identiy matrix and no translation)
-  Eigen::Matrix3f transformation = Eigen::Matrix3f::Identity();
-  Eigen::Vector3f translation = Eigen::Vector3f::Zero();
+  Eigen::Matrix3d transformation = Eigen::Matrix3d::Identity();
+  Eigen::Vector3d translation = Eigen::Vector3d::Zero();
 
   //compute center of mass for each point set (computations require both sets centered at origin)
-  Eigen::Vector3f xBar = Eigen::Vector3f::Zero();//moving points centroid
-  Eigen::Vector3f yBar = Eigen::Vector3f::Zero();//reference points centroid
+  Eigen::Vector3d xBar = Eigen::Vector3d::Zero();//moving points centroid
+  Eigen::Vector3d yBar = Eigen::Vector3d::Zero();//reference points centroid
   float totalW = 0.0f;
-  for(size_t i = 0; i < numPoints; i++)
+  for(size_t i = 0; i < numFeatures; i++)
   {
     size_t index = 3 * sharedFeatures[i];
     float w = 1.0f;
     if(getUseWeights())
-    {
       w = m_Weights[sharedFeatures[i]];
-    }
-    xBar += w * Eigen::Vector3f(m_MovingCentroids[index + 0], m_MovingCentroids[index + 1], m_MovingCentroids[index + 2]);
-    yBar += w * Eigen::Vector3f(m_ReferenceCentroids[index + 0], m_ReferenceCentroids[index + 1], m_ReferenceCentroids[index + 2]);
+    xBar += w * Eigen::Vector3d(m_MovingCentroids[index + 0], m_MovingCentroids[index + 1], m_MovingCentroids[index + 2]);
+    yBar += w * Eigen::Vector3d(m_ReferenceCentroids[index + 0], m_ReferenceCentroids[index + 1], m_ReferenceCentroids[index + 2]);
   }
-  xBar /= numPoints;
-  yBar /= numPoints;
+
+  xBar /= numFeatures;
+  yBar /= numFeatures;
   if(getUseWeights())
   {
     xBar /= totalW;
@@ -383,89 +339,77 @@ void RegisterPointSets::execute()
   }
 
   //compute variance and covariance matrices
-  Eigen::Matrix3f covariance = Eigen::Matrix3f::Zero();
-  Eigen::Matrix3f variance = Eigen::Matrix3f::Zero();
-  for(size_t i = 0; i < numPoints; i++)
+  Eigen::Matrix3d covariance = Eigen::Matrix3d::Zero();
+  Eigen::Matrix3d variance = Eigen::Matrix3d::Zero();
+  for(size_t i = 0; i < numFeatures; i++)
   {
     size_t index = 3 * sharedFeatures[i];
-    Eigen::Vector3f x(m_MovingCentroids[index + 0], m_MovingCentroids[index + 1], m_MovingCentroids[index + 2]);
-    Eigen::Vector3f y(m_ReferenceCentroids[index + 0], m_ReferenceCentroids[index + 1], m_ReferenceCentroids[index + 2]);
+    Eigen::Vector3d x(m_MovingCentroids[index + 0], m_MovingCentroids[index + 1], m_MovingCentroids[index + 2]);
+    Eigen::Vector3d y(m_ReferenceCentroids[index + 0], m_ReferenceCentroids[index + 1], m_ReferenceCentroids[index + 2]);
     x -= xBar;
     y -= yBar;
     float w = 1.0f;
     if(getUseWeights())
-    {
       w = m_Weights[sharedFeatures[i]];
-    }
-    covariance += w * Eigen::Matrix3f(x * y.transpose());
-    variance += w * Eigen::Matrix3f(x * x.transpose());
+    covariance += w * Eigen::Matrix3d(x * y.transpose());
+    variance += w * Eigen::Matrix3d(x * x.transpose());
   }
 
-  //shear and no shear are handled differently
-  if(getAllowShearing())
+  //shear (requires full affine) and no shear are handled differently
+  if(affine)
   {
-    if(getAllowRotation() && getAllowScaling() && 1 == getScalingType())
-    {
-      //full affine
-      transformation = variance.inverse() * covariance;
-      transformation.transposeInPlace();
-    }
+    bool invertible;
+    Eigen::Matrix3d inverse;
+    variance.computeInverseWithCheck(inverse, invertible);
+    if(invertible)
+      transformation = inverse * covariance;
     else
-    {
-      //bad combination
-      QString ss = QObject::tr("Unallowed combination of degree(s) of freedom");
-      setErrorCondition(-1);
-      notifyErrorMessage(getHumanLabel(), ss, -1);
-      return;
-    }
+      notifyWarningMessage(getHumanLabel(), "singular variance matrix", 1);
+    transformation.transposeInPlace();
   }
-  else//no shear
+  else
   {
-    //compute rotation if allowed
     if(getAllowRotation())
     {
       //perform singular value decomposition of covariance matrix
-      Eigen::JacobiSVD<Eigen::Matrix3f> svd(covariance, Eigen::ComputeFullU | Eigen::ComputeFullV);
+      Eigen::JacobiSVD<Eigen::Matrix3d> svd(covariance, Eigen::ComputeFullU | Eigen::ComputeFullV);
       
       //check determinates (det(V) * det(U) == 1 for rotation or -1 for rotation + reflection)
       //least square rotation matrix is V * I * U^T if det(V) == 1, V * {{1,0,0},{0,1,0},{0,0,-1}} * U^T if == -1
-      Eigen::Matrix3f i = Eigen::Matrix3f::Identity();
+      Eigen::Matrix3d i = Eigen::Matrix3d::Identity();
       if(svd.matrixV().determinant() * svd.matrixU().determinant() < 0)
-      {
         i(2, 2) = -1;
-      }
       transformation = svd.matrixV() * i * svd.matrixU().transpose();
     }
 
-    //compute scaling if needed
     if(getAllowScaling())
     {
-      Eigen::Matrix3f scale = Eigen::Matrix3f::Identity();
-      Eigen::Matrix3f numerator = transformation * covariance;
-      Eigen::Matrix3f denomenator = transformation * variance * transformation.transpose();
+      Eigen::Matrix3d scale = Eigen::Matrix3d::Identity();
+      Eigen::Matrix3d numerator = transformation * covariance;
+      Eigen::Matrix3d denomenator = transformation * variance * transformation.transpose();
 
-      if(0 == getScalingType())
-      {
-        //isotropic scaling
+      if(0 == getScalingType())//isotropic scaling
         scale.diagonal().fill( numerator.trace() / denomenator.trace() );
-      }
-      else//(1 == getScalingType())
-      {
+      else//anisotropic scaling
         scale.diagonal() = numerator.diagonal().cwiseQuotient(denomenator.diagonal());
-      }
 
-      //combine rotation + scaling
       transformation = transformation * scale;
     }
   }
 
-  //compute translation
-  if(getAllowTranslation())
-  {
-    translation = yBar - transformation * xBar;
-  }
+  //centroids are absolulte but transormation must be w.r.t. origin
+  float refOrigin[3] = {0.0f, 0.0f, 0.0f};
+  float movOrigin[3] = {0.0f, 0.0f, 0.0f};
 
-  //fill transformation
+  getDataContainerArray()->getDataContainer(getReferenceCentroidsArrayPath().getDataContainerName())->getGeometryAs<ImageGeom>()->getOrigin(refOrigin);
+  getDataContainerArray()->getDataContainer(getMovingCentroidsArrayPath().getDataContainerName())->getGeometryAs<ImageGeom>()->getOrigin(movOrigin);
+
+  yBar += Eigen::Vector3d(refOrigin[0], refOrigin[1], refOrigin[2]);
+  xBar += Eigen::Vector3d(movOrigin[0], movOrigin[1], movOrigin[2]);
+
+  //compute translation and fill in transformation
+  translation = yBar - transformation * xBar;
+
   m_Transform[0] = transformation(0, 0);
   m_Transform[1] = transformation(0, 1);
   m_Transform[2] = transformation(0, 2);
@@ -481,22 +425,6 @@ void RegisterPointSets::execute()
   m_Transform[10] = transformation(2, 2);
   m_Transform[11] = translation(2);
 
-  if (getCancel() == true)
-  {
-    /* Gracefully clean up your filter before exiting. */
-    return;
-  }
-
-  /* If some error occurs this code snippet can report the error up the call chain*/
-  if (err < 0)
-  {
-    QString ss = QObject::tr("Some error message");
-    setErrorCondition(-99999999);
-    notifyErrorMessage(getHumanLabel(), ss, getErrorCondition());
-    return;
-  }
-
-  /* Let the GUI know we are done with this filter */
   notifyStatusMessage(getHumanLabel(), "Complete");
 }
 
@@ -505,26 +433,35 @@ void RegisterPointSets::execute()
 // -----------------------------------------------------------------------------
 AbstractFilter::Pointer RegisterPointSets::newFilterInstance(bool copyFilterParameters)
 {
-  /*
-  * write code to optionally copy the filter parameters from the current filter into the new instance
-  */
   RegisterPointSets::Pointer filter = RegisterPointSets::New();
   if(true == copyFilterParameters)
   {
-    /* If the filter uses all the standard Filter Parameter Widgets you can probabaly get
-     * away with using this method to copy the filter parameters from the current instance
-     * into the new instance
-     */
     copyFilterParameterInstanceVariables(filter.get());
-    /* If your filter is using a lot of custom FilterParameterWidgets @see ReadH5Ebsd then you
-     * may need to copy each filter parameter explicitly plus any other instance variables that
-     * are needed into the new instance. Here is some example code from ReadH5Ebsd
-     */
-    //    DREAM3D_COPY_INSTANCEVAR(OutputFile)
-    //    DREAM3D_COPY_INSTANCEVAR(ZStartIndex)
-    //    DREAM3D_COPY_INSTANCEVAR(ZEndIndex)
-    //    DREAM3D_COPY_INSTANCEVAR(ZResolution)
   }
   return filter;
 }
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+const QString RegisterPointSets::getCompiledLibraryName()
+{ return DataFusionConstants::DataFusionBaseName; }
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+const QString RegisterPointSets::getGroupName()
+{ return DREAM3D::FilterGroups::Unsupported; }
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+const QString RegisterPointSets::getHumanLabel()
+{ return "Register Point Sets"; }
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+const QString RegisterPointSets::getSubGroupName()
+{ return "DataFusion"; }
 

@@ -1,9 +1,8 @@
-Register Orientations {#registerorientations}
-=====
+RegisterOrientations {#registerorientations}
+=============
 
 ## Group (Subgroup) ##
-DatasetMerging (DatasetMerging)
-
+DataFusion (DataFusion)
 
 ## Description ##
 This filter finds the average rotation from <B>Moving Quats</B> to <B>Reference Quats</B> and then applies it to <B>Moving Quats</B> to align their crystallographic reference frames. The average rotation is computed with the following algorithm:
@@ -21,11 +20,10 @@ This filter finds the average rotation from <B>Moving Quats</B> to <B>Reference 
 - Average all '<I>best rotations</I>' with a corresponding average '<I>minimum rotation angle</I>' below the <B>Minimum Average Rotation Angle</B>
 
 ## Parameters ##
-| Name             | Type | Comment |
-|------------------|------|---------|
-| Write Best Rotations to File | Boolean | if selected the '<I>best rotations</I>' for each pair along with their   corresponding average '<I>minimum rotation angle</I>' will be written to a csv |
-| Output File | String | The file to write best rotation info to |
-| Minimum Average Rotation Angle | Double | The threshold for average '<I>minimum rotation angle</I>' (degrees) |
+| Name             | Type |
+|------------------|------|
+| Use Good Features| Boolean |
+| Minimum Average Rotation Angle | Double |
 
 ## Required Arrays ##
 
@@ -40,20 +38,14 @@ This filter finds the average rotation from <B>Moving Quats</B> to <B>Reference 
 | Boolean  | ThresholdArray           | Reference Features' Good Features        |
 | Boolean  | ThresholdArray           | Moving Features' Good Features        |
 
-
 ## Created Arrays ##
 none
 
+## License & Copyright ##
 
+Please see the description file distributed with this plugin.
 
-## Authors: ##
+## DREAM3D Mailing Lists ##
 
-**Copyright:** Who holds the copyright for the code
-
-**Contact Info:** email address
-
-**Version:** x.y.z
-
-**License:**  What is the license for this code
-
-
+If you need more help with a filter, please consider asking your question on the DREAM3D Users mailing list:
+https://groups.google.com/forum/?hl=en#!forum/dream3d-users

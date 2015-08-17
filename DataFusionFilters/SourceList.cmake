@@ -2,22 +2,22 @@
 #-- Your License or copyright can go here
 #--////////////////////////////////////////////////////////////////////////////
 
-set(_filterGroupName DatasetMergingFilters)
+set(_filterGroupName DataFusionFilters)
 set(${_filterGroupName}_FILTERS_HDRS "")
 
 #--------
 # This macro must come first before we start adding any filters
-START_FILTER_GROUP(${DatasetMerging_BINARY_DIR} "${_filterGroupName}" "DatasetMerging")
+START_FILTER_GROUP(${DataFusion_BINARY_DIR} "${_filterGroupName}" "DataFusion")
 
 
 #---------
 # List your public filters here
 set(_PublicFilters
+  FuseVolumes
   MatchFeatureIds
-  MergeVolumes
   RegisterOrientations
   RegisterPointSets
-  GenerateDatasetMisorientationColors
+
 )
 
 
@@ -25,9 +25,9 @@ set(_PublicFilters
 # Loop on all the filters adding each one. In this loop we default to making each filter exposed in the user
 # interface in DREAM3D. If you want to have the filter compiled but NOT exposed to the user then use the next loop
 foreach(f ${_PublicFilters} )
-  ADD_DREAM3D_FILTER(  "DatasetMerging" "DatasetMerging"
+  ADD_DREAM3D_FILTER(  "DataFusion" "DataFusion"
                         ${_filterGroupName} ${f}
-                        ${DatasetMerging_SOURCE_DIR}/Documentation/${_filterGroupName}/${f}.md TRUE)
+                        ${DataFusion_SOURCE_DIR}/Documentation/${_filterGroupName}/${f}.md TRUE)
 endforeach()
 
 
@@ -41,7 +41,7 @@ set(_PrivateFilters
 #-----------------
 # Loop on the Private Filters adding each one to the DREAM3DLib project so that it gets compiled.
 foreach(f ${_PrivateFilters} )
-  ADD_DREAM3D_FILTER(  "DatasetMerging" "DatasetMerging"
+  ADD_DREAM3D_FILTER(  "DataFusion" "DataFusion"
                         ${_filterGroupName} ${f}
                         ${DREAM3DLib_FILTER_DOC_DIR}/${_filterGroupName}/${f}.md FALSE)
 endforeach()
@@ -50,5 +50,5 @@ endforeach()
 
 #---------------------
 # This macro must come last after we are done adding all the filters and support files.
-END_FILTER_GROUP(${DatasetMerging_BINARY_DIR} "${_filterGroupName}" "DatasetMerging")
+END_FILTER_GROUP(${DataFusion_BINARY_DIR} "${_filterGroupName}" "DataFusion")
 

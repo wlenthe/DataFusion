@@ -1,3 +1,0 @@
-/*
- * Your Plugin Description can go here
- */

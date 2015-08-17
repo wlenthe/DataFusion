@@ -1,10 +1,10 @@
 #--////////////////////////////////////////////////////////////////////////////
-#-- Your License or copyright can go here
+#-- Your License or Copyright can go here
 #--////////////////////////////////////////////////////////////////////////////
 
-project(DatasetMerging)
+project(DataFusion VERSION 1.0)
 
-set(PLUGIN_NAME DatasetMerging)
+set(PLUGIN_NAME DataFusion)
 
 # --------------------------------------------------------------------
 # Look for Qt 5 as we need it for the plugin GUI to be generated
@@ -12,7 +12,15 @@ if(NOT Qt5Core_FOUND)
     message(FATAL_ERROR "Qt 5 is Needed for plugin ${PLUGIN_NAME}Plugin.")
 endif()
 
+set(CMP_TOP_HEADER_FILE "${PLUGIN_NAME}Plugin.h")
+set(VERSION_HEADER_FILE_NAME "${PLUGIN_NAME}Version.h")
+set(VERSION_SOURCE_FILE_NAME "${PLUGIN_NAME}Version.cpp")
 
+cmpRevisionString( GENERATED_HEADER_FILE_PATH "${VERSION_HEADER_FILE_NAME}"
+                    GENERATED_SOURCE_FILE_PATH "${VERSION_SOURCE_FILE_NAME}"
+                    NAMESPACE "${PLUGIN_NAME}"
+                    PROJECT_NAME "${PROJECT_NAME}"
+                    EXPORT_MACRO "")
 
 set(${PLUGIN_NAME}_Project_SRCS "")
 
@@ -77,8 +85,8 @@ set(RegisterKnownFiltersFile ${${PLUGIN_NAME}_BINARY_DIR}/${PLUGIN_NAME}Filters/
 #--------------------------
 include_directories( ${HDF5_INCLUDE_DIR} )
 include_directories( ${PROJECT_CODE_DIR} )
-include_directories( ${QtSupport_BINARY_DIR} )
-include_directories( ${QtSupport_SOURCE_DIR} )
+include_directories( ${QtSupportLib_BINARY_DIR} )
+include_directories( ${QtSupportLib_SOURCE_DIR} )
 
 
 get_filename_component(PLUGINS_SOURCE_DIR  ${${PLUGIN_NAME}_SOURCE_DIR} DIRECTORY)
@@ -138,6 +146,8 @@ set(${PLUGIN_NAME}_GEN_HDRS
    ${RegisterKnownFiltersFile}
    ${AllFilterParameterWidgetsHeaderFile}
    ${RegisterKnownFilterParameterWidgetsFile}
+  "${${PLUGIN_NAME}_BINARY_DIR}/${PLUGIN_NAME}Version.h"
+  "${${PLUGIN_NAME}_BINARY_DIR}/${PLUGIN_NAME}Version.cpp"
 )
 
 # --------------------------------------------------------------------
@@ -179,6 +189,9 @@ set(${PLUGIN_NAME}_MODULE_SRCS
   ${${PLUGIN_NAME}_GEN_HDRS}
   # -- Add in the miscellaneous resources (license, plugin info, ...)
   ${${PLUGIN_NAME}_Generated_RC_SRCS}
+  # -- Add in our Generated Version Files
+  ${${PLUGIN_NAME}_BINARY_DIR}/${VERSION_HEADER_FILE_NAME}
+  ${${PLUGIN_NAME}_BINARY_DIR}/${VERSION_SOURCE_FILE_NAME}
 )
 
 # --------------------------------------------------------------------
@@ -195,7 +208,7 @@ target_link_libraries(${PLUGIN_NAME}
                     DREAM3DLib
                     OrientationLib
                     Qt5::Gui Qt5::Widgets
-                    QtSupport
+                    QtSupportLib
                     DREAM3DWidgetsLib
                     )
 SET_TARGET_PROPERTIES(${PLUGIN_NAME} PROPERTIES FOLDER ${PLUGIN_NAME}Plugin)
@@ -210,6 +223,10 @@ PluginProperties(${PLUGIN_NAME} "_debug" "${DREAM3D_VERSION}"
 # Put back the output directory
 if(NOT MSVC)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY  ${DREAM3DProj_BINARY_DIR}/Bin  )
+endif()
+
+if(DREAM3D_BUILD_TESTING)
+  ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/Test ${PROJECT_BINARY_DIR}/Test)
 endif()
 
 

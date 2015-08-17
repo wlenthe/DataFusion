@@ -1,7 +1,0 @@
- <!DOCTYPE RCC>
- <RCC version="1.0">
- <qresource>
- <file>DatasetMerging/DatasetMergingLicense.txt</file>
- <file>DatasetMerging/DatasetMergingDescription.txt</file>
- </qresource>
- </RCC>

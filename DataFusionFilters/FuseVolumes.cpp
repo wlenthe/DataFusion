@@ -1,21 +1,29 @@
 /*
- * Your License or Copyright Information can go here
+ * Your License or Copyright can go here
  */
 
-#include "MergeVolumes.h"
+#include "FuseVolumes.h"
+
+#include "DREAM3DLib/Common/Constants.h"
+#include "DREAM3DLib/FilterParameters/AbstractFilterParametersReader.h"
+#include "DREAM3DLib/FilterParameters/AbstractFilterParametersWriter.h"
+
+#include "DREAM3DLib/FilterParameters/AttributeMatrixSelectionFilterParameter.h"
+#include "DREAM3DLib/FilterParameters/StringFilterParameter.h"
+#include "DREAM3DLib/FilterParameters/LinkedChoicesFilterParameter.h"
+#include "DREAM3DLib/FilterParameters/DataArraySelectionFilterParameter.h"
+#include "DREAM3DLib/FilterParameters/DynamicTableFilterParameter.h"
 
 #ifdef DREAM3D_USE_PARALLEL_ALGORITHMS
-#include <tbb/parallel_for.h>
-#include <tbb/blocked_range3d.h>
-#include <tbb/partitioner.h>
-#include <tbb/task_scheduler_init.h>
+  #include <tbb/parallel_for.h>
+  #include <tbb/blocked_range3d.h>
+  #include <tbb/partitioner.h>
+  #include <tbb/task_scheduler_init.h>
 #endif
 
-#include <QtCore/QString>
+#include <Eigen/Dense>
 
- #include <Eigen/Dense>
-
-#include "DatasetMerging/DatasetMergingConstants.h"
+#include "DataFusion/DataFusionConstants.h"
 
 #if (CMP_SIZEOF_SIZE_T == 4)
   typedef int32_t DimType;
@@ -23,11 +31,11 @@
   typedef int64_t DimType;
 #endif
 
-class MergeVolumesImpl
+class FuseVolumesImpl
 {
 
   public:
-    MergeVolumesImpl(DimType* movingDims, DimType* referenceDims, float* movingOrign, float* referenceOrign, float* movingSpacing, float* referenceSpacing, Eigen::Matrix3f transform, Eigen::Vector3f translation, AttributeMatrix::Pointer movingAttMatt, AttributeMatrix::Pointer fixedAttMatt, QString prefix, int64_t* newIndicies) :
+    FuseVolumesImpl(DimType* movingDims, DimType* referenceDims, float* movingOrign, float* referenceOrign, float* movingSpacing, float* referenceSpacing, Eigen::Matrix3f transform, Eigen::Vector3f translation, AttributeMatrix::Pointer movingAttMatt, AttributeMatrix::Pointer fixedAttMatt, QString prefix, int64_t* newIndicies) :
     m_movingDims(movingDims),
     m_movingOrigin(movingOrign),
     m_movingResolution(movingSpacing),
@@ -41,7 +49,7 @@ class MergeVolumesImpl
     m_referenceAtrMatPtr(fixedAttMatt),
     m_newIndicies(newIndicies)
     {}
-    virtual ~MergeVolumesImpl() {}
+    virtual ~FuseVolumesImpl() {}
 
     void convert(size_t zStart, size_t zEnd, size_t yStart, size_t yEnd, size_t xStart, size_t xEnd) const
     {
@@ -110,91 +118,92 @@ class MergeVolumesImpl
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-MergeVolumes::MergeVolumes() :
+FuseVolumes::FuseVolumes() :
   AbstractFilter(),
-  m_ReferenceCellAttributeMatrixArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, ""),
-  m_MovingCellAttributeMatrixArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, ""),
-  m_Prefix("merged_")
+  m_ReferenceVolume(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, ""),
+  m_MovingVolume(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, ""),
+  m_Prefix("fused_"),
+  m_TransformationType(0),
+  m_TransformationArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DataFusionConstants::Transformation, DataFusionConstants::Transformation)
 {
-  m_Row1.a = 1.0f;
-  m_Row1.b = 0.0f;
-  m_Row1.c = 0.0f;
-  m_Row1.d = 0.0f;
-  
-  m_Row2.a = 0.0f;
-  m_Row2.b = 1.0f;
-  m_Row2.c = 0.0f;
-  m_Row2.d = 0.0f;
-  
-  m_Row3.a = 0.0f;
-  m_Row3.b = 0.0f;
-  m_Row3.c = 1.0f;
-  m_Row3.d = 0.0f;
-
-  m_Row4.a = 0.0f;
-  m_Row4.b = 0.0f;
-  m_Row4.c = 0.0f;
-  m_Row4.d = 1.0f;
+  std::vector<std::vector <double> > identity(3, std::vector<double>(4, 0));
+  for(size_t i = 0; i < 3; i++) identity[i][i] = 1;
+  DynamicTableData data = getManualTransformation();
+  data.setTableData(identity);
+  setManualTransformation(data);
   setupFilterParameters();
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-MergeVolumes::~MergeVolumes()
+FuseVolumes::~FuseVolumes()
 {
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void MergeVolumes::setupFilterParameters()
+void FuseVolumes::setupFilterParameters()
 {
   FilterParameterVector parameters;
-  parameters.push_back(FilterParameter::New("Reference Cell Attribute Matrix", "ReferenceCellAttributeMatrixArrayPath", FilterParameterWidgetType::AttributeMatrixSelectionWidget, getReferenceCellAttributeMatrixArrayPath(), false));
-  parameters.push_back(FilterParameter::New("Moving Cell Attribute Matrix", "MovingCellAttributeMatrixArrayPath", FilterParameterWidgetType::AttributeMatrixSelectionWidget, getMovingCellAttributeMatrixArrayPath(), false));
-  parameters.push_back(FilterParameter::New("Array Prefix", "Prefix", FilterParameterWidgetType::StringWidget, getPrefix(), true, ""));
-  parameters.push_back(FilterParameter::New("Affine Transform", "", FilterParameterWidgetType::SeparatorWidget, "", false));
-  parameters.push_back(FilterParameter::New("", "Row1", FilterParameterWidgetType::FloatVec4Widget, getRow1(), false));
-  parameters.push_back(FilterParameter::New("", "Row2", FilterParameterWidgetType::FloatVec4Widget, getRow2(), false));
-  parameters.push_back(FilterParameter::New("", "Row3", FilterParameterWidgetType::FloatVec4Widget, getRow3(), false));
+  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Reference Atrribute Matrix", "ReferenceVolume", getReferenceVolume(), FilterParameter::RequiredArray, 0));
+  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Moving Atrribute Matrix", "MovingVolume", getMovingVolume(), FilterParameter::RequiredArray, 0));
+  parameters.push_back(StringFilterParameter::New("Merged Array Prefix", "Prefix", getPrefix(), FilterParameter::Parameter));
 
-  FilterParameter::Pointer param = FilterParameter::New("", "Row4", FilterParameterWidgetType::FloatVec4Widget, getRow4(), false);
-  param->setReadOnly(true);
-  parameters.push_back(param);
+  {
+    QVector<QString> choices;
+      choices.push_back("Computed Value");
+      choices.push_back("Manual Entry");
+    QStringList linkedProps;
+      linkedProps << "TransformationArrayPath" << "ManualTransformation";
+    LinkedChoicesFilterParameter::Pointer parameter = LinkedChoicesFilterParameter::New();
+      parameter->setHumanLabel("Transformation Type");
+      parameter->setPropertyName("TransformationType");
+      parameter->setChoices(choices);
+      parameter->setLinkedProperties(linkedProps);
+      parameter->setCategory(FilterParameter::Parameter);
+    parameters.push_back(parameter);
+  }
+
+  parameters.push_back(DataArraySelectionFilterParameter::New("Transformation", "TransformationArrayPath", getTransformationArrayPath(), FilterParameter::RequiredArray, 0));
+
+  QStringList headers;
+  headers << "" << "" << "" << "";
+  parameters.push_back(DynamicTableFilterParameter::New("Transformation", "ManualTransformation", headers, headers, getManualTransformation().getTableData(), FilterParameter::Parameter, false, false, 3, 4));
+  parameters.back()->setGroupIndex(1);
+
   setFilterParameters(parameters);
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void MergeVolumes::readFilterParameters(AbstractFilterParametersReader* reader, int index)
+void FuseVolumes::readFilterParameters(AbstractFilterParametersReader* reader, int index)
 {
   reader->openFilterGroup(this, index);
-  setReferenceCellAttributeMatrixArrayPath( reader->readDataArrayPath("ReferenceCellAttributeMatrixArrayPath", getReferenceCellAttributeMatrixArrayPath() ) );
-  setMovingCellAttributeMatrixArrayPath( reader->readDataArrayPath("MovingCellAttributeMatrixArrayPath", getMovingCellAttributeMatrixArrayPath() ) );
+  setReferenceVolume( reader->readDataArrayPath( "ReferenceVolume", getReferenceVolume() ) );
+  setMovingVolume( reader->readDataArrayPath( "MovingVolume", getMovingVolume() ) );
   setPrefix( reader->readString("Prefix", getPrefix() ) );
-  setRow1( reader->readFloatVec4("Row1", getRow1() ) );
-  setRow2( reader->readFloatVec4("Row2", getRow2() ) );
-  setRow3( reader->readFloatVec4("Row3", getRow3() ) );
-  setRow4( reader->readFloatVec4("Row4", getRow4() ) );
+  setTransformationType( reader->readValue("TransformationType", getTransformationType()) );
+  setTransformationArrayPath( reader->readDataArrayPath( "TransformationArrayPath", getTransformationArrayPath() ) );
+  setManualTransformation(reader->readDynamicTableData("ManualTransformation", getManualTransformation()));
   reader->closeFilterGroup();
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-int MergeVolumes::writeFilterParameters(AbstractFilterParametersWriter* writer, int index)
+int FuseVolumes::writeFilterParameters(AbstractFilterParametersWriter* writer, int index)
 {
   writer->openFilterGroup(this, index);
   DREAM3D_FILTER_WRITE_PARAMETER(FilterVersion)
-  DREAM3D_FILTER_WRITE_PARAMETER(ReferenceCellAttributeMatrixArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(MovingCellAttributeMatrixArrayPath)
+  DREAM3D_FILTER_WRITE_PARAMETER(ReferenceVolume)
+  DREAM3D_FILTER_WRITE_PARAMETER(MovingVolume)
   DREAM3D_FILTER_WRITE_PARAMETER(Prefix)
-  DREAM3D_FILTER_WRITE_PARAMETER(Row1)
-  DREAM3D_FILTER_WRITE_PARAMETER(Row2)
-  DREAM3D_FILTER_WRITE_PARAMETER(Row3)
-  DREAM3D_FILTER_WRITE_PARAMETER(Row4)
+  DREAM3D_FILTER_WRITE_PARAMETER(TransformationType)
+  DREAM3D_FILTER_WRITE_PARAMETER(TransformationArrayPath)
+  DREAM3D_FILTER_WRITE_PARAMETER(ManualTransformation)
   writer->closeFilterGroup();
   return ++index; // we want to return the next index that was just written to
 }
@@ -202,30 +211,34 @@ int MergeVolumes::writeFilterParameters(AbstractFilterParametersWriter* writer, 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void MergeVolumes::dataCheck()
+void FuseVolumes::dataCheck()
 {
   setErrorCondition(0);
 
-  if(0 != m_Row4.a || 0 != m_Row4.b || 0 != m_Row4.c || 1 != m_Row4.d )
-  {
-    notifyErrorMessage(getHumanLabel(), "'Final row of affine transform must be 0 0 0 1", -5);
-  }
-
-  //this filter will copy all arrays from 1 attribute matrix to another make sure they show up in pipeline
-  AttributeMatrix::Pointer refCellAttrMat = getDataContainerArray()->getPrereqAttributeMatrixFromPath<AbstractFilter>(this, getReferenceCellAttributeMatrixArrayPath(), -303);
+  //get attribute matricies and ensure they are 3D cell attribute matricies
+  AttributeMatrix::Pointer refCellAttrMat = getDataContainerArray()->getPrereqAttributeMatrixFromPath<AbstractFilter>(this, getReferenceVolume(), -303);
   if(getErrorCondition() < 0 || NULL == refCellAttrMat.get() ) { return; }
-
-  AttributeMatrix::Pointer moveCellAttrMat = getDataContainerArray()->getPrereqAttributeMatrixFromPath<AbstractFilter>(this, getMovingCellAttributeMatrixArrayPath(), -303);
-  if(getErrorCondition() < 0 || NULL == moveCellAttrMat.get() ) { return; }
-
-  //make sure we're transforming between cell
   if(3 != refCellAttrMat->getTupleDimensions().size() || DREAM3D::AttributeMatrixType::Cell !=refCellAttrMat->getType() )
-  {
     notifyErrorMessage(getHumanLabel(), "'Reference Cell Attribute Matrix' must be 3 dimensional rectilinear grid", -1000);
-  }
+
+  AttributeMatrix::Pointer moveCellAttrMat = getDataContainerArray()->getPrereqAttributeMatrixFromPath<AbstractFilter>(this, getMovingVolume(), -303);
+  if(getErrorCondition() < 0 || NULL == moveCellAttrMat.get() ) { return; }
   if(3 != moveCellAttrMat->getTupleDimensions().size() || DREAM3D::AttributeMatrixType::Cell !=moveCellAttrMat->getType() )
-  {
     notifyErrorMessage(getHumanLabel(), "'Moving Cell Attribute Matrix' must be 3 dimensional rectilinear grid", -1000);
+
+  //get geometries and make sure they are image geometeries
+  if(DREAM3D::GeometryType::ImageGeometry != getDataContainerArray()->getDataContainer(getReferenceVolume().getDataContainerName())->getGeometry()->getGeometryType())
+    notifyErrorMessage(getHumanLabel(), "Rectilinear grid geometry required for Reference Atrribute Matrix.", -390);
+  if(DREAM3D::GeometryType::ImageGeometry != getDataContainerArray()->getDataContainer(getMovingVolume().getDataContainerName())->getGeometry()->getGeometryType())
+    notifyErrorMessage(getHumanLabel(), "Rectilinear grid geometry required for Moving Atrribute Matrix.", -390);
+
+  //get computed transformation if needed
+  if(0 == getTransformationType())
+  {
+      QVector<size_t> dims(2, 4);
+      m_TransformationPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<float>, AbstractFilter>(this, getTransformationArrayPath(), dims);
+      if( NULL != m_TransformationPtr.lock().get() )
+      { m_Transformation = m_TransformationPtr.lock()->getPointer(0); }
   }
 
   //loop over attribute arrays of moving, copying to source
@@ -264,13 +277,13 @@ void MergeVolumes::dataCheck()
   }
 
   //if the 2 attribute matricies belong to different data containers, also copy all other attribute matricies (so feature + ensemble data carry over)
-  if( 0 != getReferenceCellAttributeMatrixArrayPath().getDataContainerName().compare(getMovingCellAttributeMatrixArrayPath().getDataContainerName()) )
+  if( 0 != getReferenceVolume().getDataContainerName().compare(getMovingVolume().getDataContainerName()) )
   {
     //get both data containers
-    DataContainer::Pointer refDataContainer = getDataContainerArray()->getPrereqDataContainer<AbstractFilter>(this, getReferenceCellAttributeMatrixArrayPath().getDataContainerName());
+    DataContainer::Pointer refDataContainer = getDataContainerArray()->getPrereqDataContainer<AbstractFilter>(this, getReferenceVolume().getDataContainerName());
     if(getErrorCondition() < 0 || NULL == refDataContainer ) { return; }
 
-    DataContainer::Pointer moveDataContainer = getDataContainerArray()->getPrereqDataContainer<AbstractFilter>(this, getMovingCellAttributeMatrixArrayPath().getDataContainerName());
+    DataContainer::Pointer moveDataContainer = getDataContainerArray()->getPrereqDataContainer<AbstractFilter>(this, getMovingVolume().getDataContainerName());
     if(getErrorCondition() < 0 || NULL == moveDataContainer ) { return; }
 
     //loop over moving attribute matricies
@@ -278,7 +291,7 @@ void MergeVolumes::dataCheck()
     for(int i = 0; i < movingAttMatList.size(); i++)
     {
       //dont copy cell array, its arrays are being copied into an existing attribute matrix
-      if( 0 != movingAttMatList[i].compare(getMovingCellAttributeMatrixArrayPath().getAttributeMatrixName()))
+      if( 0 != movingAttMatList[i].compare(getMovingVolume().getAttributeMatrixName()))
       {
         QString newName = getPrefix() + movingAttMatList[i];
         if(refDataContainer->doesAttributeMatrixExist(newName))
@@ -311,7 +324,7 @@ void MergeVolumes::dataCheck()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void MergeVolumes::preflight()
+void FuseVolumes::preflight()
 {
   // These are the REQUIRED lines of CODE to make sure the filter behaves correctly
   setInPreflight(true); // Set the fact that we are preflighting.
@@ -325,67 +338,17 @@ void MergeVolumes::preflight()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-const QString MergeVolumes::getCompiledLibraryName()
+void FuseVolumes::execute()
 {
-  return DatasetMerging::DatasetMergingBaseName;
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-const QString MergeVolumes::getGroupName()
-{
-  return DatasetMerging::DatasetMergingPluginDisplayName;
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-const QString MergeVolumes::getHumanLabel()
-{
-  return "Merge Volumes";
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-const QString MergeVolumes::getSubGroupName()
-{
-  return DREAM3D::FilterSubGroups::RotationTransformationFilters;
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void MergeVolumes::execute()
-{
-  int err = 0;
-  // typically run your dataCheck function to make sure you can get that far and all your variables are initialized
-  dataCheck();
-  // Check to make sure you made it through the data check. Errors would have been reported already so if something
-  // happens to fail in the dataCheck() then we simply return
-  if(getErrorCondition() < 0) { return; }
   setErrorCondition(0);
+  dataCheck();
+  if(getErrorCondition() < 0) { return; }
 
-   //get fixed and moving data containers
-  DataContainer::Pointer mReference = getDataContainerArray()->getDataContainer(getReferenceCellAttributeMatrixArrayPath().getDataContainerName());
-  DataContainer::Pointer mMoving = getDataContainerArray()->getDataContainer(getMovingCellAttributeMatrixArrayPath().getDataContainerName());
+  if (getCancel() == true) { return; }
 
-  //make sure that both data containers are rectilinear grids
-  if(DREAM3D::GeometryType::ImageGeometry != mReference->getGeometry()->getGeometryType())
-  {
-    QString ss = QObject::tr("Rectilinear grid geometry required for Reference Cell Attribute Matrix DataContainer.");
-    setErrorCondition(-390);
-    notifyErrorMessage(getHumanLabel(), ss, getErrorCondition());
-    return;
-  }
-  if(DREAM3D::GeometryType::ImageGeometry != mMoving->getGeometry()->getGeometryType())
-  {
-    QString ss = QObject::tr("Rectilinear grid geometry required for Moving Cell Attribute Matrix DataContainer.");
-    setErrorCondition(-390);
-    notifyErrorMessage(getHumanLabel(), ss, getErrorCondition());
-    return;
-  }
+  //get fixed and moving data containers
+  DataContainer::Pointer mReference = getDataContainerArray()->getDataContainer(getReferenceVolume().getDataContainerName());
+  DataContainer::Pointer mMoving = getDataContainerArray()->getDataContainer(getMovingVolume().getDataContainerName());
 
   //get dimensions, origins, and resolutions
   ImageGeom::Pointer refGeom = mReference->getGeometryAs<ImageGeom>();
@@ -394,11 +357,10 @@ void MergeVolumes::execute()
   //dimensions
   size_t ref_udims[3] = { 0, 0, 0 };
   refGeom->getDimensions(ref_udims);
+  DimType refDims[3] = { static_cast<DimType>(ref_udims[0]), static_cast<DimType>(ref_udims[1]), static_cast<DimType>(ref_udims[2]), };
 
   size_t mov_udims[3] = { 0, 0, 0 };
   movGeom->getDimensions(mov_udims);
-
-  DimType refDims[3] = { static_cast<DimType>(ref_udims[0]), static_cast<DimType>(ref_udims[1]), static_cast<DimType>(ref_udims[2]), };
   DimType movDims[3] = { static_cast<DimType>(mov_udims[0]), static_cast<DimType>(mov_udims[1]), static_cast<DimType>(mov_udims[2]), };
 
   //origins
@@ -416,20 +378,33 @@ void MergeVolumes::execute()
   movGeom->getResolution(movingRes);
 
   //get attribute matricies
-  AttributeMatrix::Pointer refCellAttrMat = mReference->getAttributeMatrix(getReferenceCellAttributeMatrixArrayPath().getAttributeMatrixName());
-  AttributeMatrix::Pointer moveCellAttrMat = mMoving->getAttributeMatrix(getMovingCellAttributeMatrixArrayPath().getAttributeMatrixName());
-
+  AttributeMatrix::Pointer refCellAttrMat = mReference->getAttributeMatrix(getReferenceVolume().getAttributeMatrixName());
+  AttributeMatrix::Pointer moveCellAttrMat = mMoving->getAttributeMatrix(getMovingVolume().getAttributeMatrixName());
 
   //fill affine transform and invert
   Eigen::Matrix4f affine;
-  affine<<m_Row1.a, m_Row1.b, m_Row1.c, m_Row1.d, m_Row2.a, m_Row2.b, m_Row2.c, m_Row2.d, m_Row3.a, m_Row3.b, m_Row3.c, m_Row3.d, m_Row4.a, m_Row4.b, m_Row4.c, m_Row4.d;
+  if(0 == getTransformationType())
+  {
+    affine << m_Transformation[0], m_Transformation[1], m_Transformation[2], m_Transformation[3],
+              m_Transformation[4], m_Transformation[5], m_Transformation[6], m_Transformation[7],
+              m_Transformation[8], m_Transformation[9], m_Transformation[10], m_Transformation[11],
+              m_Transformation[12], m_Transformation[13], m_Transformation[14], m_Transformation[15];
+  }
+  else if(1 == getTransformationType())
+  {
+    std::vector<std::vector<double> > t = getManualTransformation().getTableData();
+    affine << t[0][0], t[0][1], t[0][2], t[0][3], 
+              t[1][0], t[1][1], t[1][2], t[1][3],
+              t[2][0], t[2][1], t[2][2], t[2][3],
+              0, 0, 0, 1;
+  }
   Eigen::Matrix4f inverseAffine = affine.inverse();
 
   //split into rotation/shear + translation (to avoid lots of extra multiplying 0*something and 1*1)
   Eigen::Matrix3f transform = inverseAffine.block<3,3>(0,0);
   Eigen::Vector3f translation = inverseAffine.block<3,1>(0,3);
 
-  //parallel compute merged indicies
+  //compute merged indicies
   size_t numTuples = refDims[0] * refDims[1] * refDims[2];
   DataArray<int64_t>::Pointer newIndiciesPtr = DataArray<int64_t>::CreateArray(numTuples, "New_Indicies");
   newIndiciesPtr->initializeWithValue(-1);
@@ -444,12 +419,12 @@ void MergeVolumes::execute()
   if (doParallel == true)
   {
     tbb::parallel_for(tbb::blocked_range3d<size_t, size_t, size_t>(0, refDims[2]-1, 0, refDims[1]-1, 0, refDims[0]-1),
-                      MergeVolumesImpl(movDims, refDims, movingOrigin, refOrigin, movingRes, refRes, transform, translation, refCellAttrMat, moveCellAttrMat, m_Prefix, newindicies), tbb::auto_partitioner());
+                      FuseVolumesImpl(movDims, refDims, movingOrigin, refOrigin, movingRes, refRes, transform, translation, refCellAttrMat, moveCellAttrMat, m_Prefix, newindicies), tbb::auto_partitioner());
   }
   else
 #endif
   {
-    MergeVolumesImpl serial(movDims, refDims, movingOrigin, refOrigin, movingRes, refRes, transform, translation, refCellAttrMat, moveCellAttrMat, m_Prefix, newindicies);
+    FuseVolumesImpl serial(movDims, refDims, movingOrigin, refOrigin, movingRes, refRes, transform, translation, refCellAttrMat, moveCellAttrMat, m_Prefix, newindicies);
     serial.convert(0, refDims[2]-1, 0, refDims[1]-1, 0, refDims[0]-1);
   }
 
@@ -483,14 +458,14 @@ void MergeVolumes::execute()
   }
 
   //copy the remaining att mats if needed (different data containers)
-  if( 0 != getReferenceCellAttributeMatrixArrayPath().getDataContainerName().compare(getMovingCellAttributeMatrixArrayPath().getDataContainerName()) )
+  if( 0 != getReferenceVolume().getDataContainerName().compare(getMovingVolume().getDataContainerName()) )
   {
     //loop over moving attribute matricies
     QList<QString> movingAttMatList = mMoving->getAttributeMatrixNames();
     for(int i = 0; i < movingAttMatList.size(); i++)
     {
       //dont copy cell array, its arrays are have been copied into an existing attribute matrix
-      if( 0 != movingAttMatList[i].compare(getMovingCellAttributeMatrixArrayPath().getAttributeMatrixName()))
+      if( 0 != movingAttMatList[i].compare(getMovingVolume().getAttributeMatrixName()))
       {
         //copy attribute matrix from reference to moving
         QString newName = getPrefix() + movingAttMatList[i];
@@ -500,50 +475,44 @@ void MergeVolumes::execute()
     }
   }
 
-  if (getCancel() == true)
-  {
-    /* Gracefully clean up your filter before exiting. */
-    return;
-  }
 
-  /* If some error occurs this code snippet can report the error up the call chain*/
-  if (err < 0)
-  {
-    QString ss = QObject::tr("Some error message");
-    setErrorCondition(-99999999);
-    notifyErrorMessage(getHumanLabel(), ss, getErrorCondition());
-    return;
-  }
-
-  /* Let the GUI know we are done with this filter */
   notifyStatusMessage(getHumanLabel(), "Complete");
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-AbstractFilter::Pointer MergeVolumes::newFilterInstance(bool copyFilterParameters)
+AbstractFilter::Pointer FuseVolumes::newFilterInstance(bool copyFilterParameters)
 {
-  /*
-  * write code to optionally copy the filter parameters from the current filter into the new instance
-  */
-  MergeVolumes::Pointer filter = MergeVolumes::New();
+  FuseVolumes::Pointer filter = FuseVolumes::New();
   if(true == copyFilterParameters)
   {
-    /* If the filter uses all the standard Filter Parameter Widgets you can probabaly get
-     * away with using this method to copy the filter parameters from the current instance
-     * into the new instance
-     */
     copyFilterParameterInstanceVariables(filter.get());
-    /* If your filter is using a lot of custom FilterParameterWidgets @see ReadH5Ebsd then you
-     * may need to copy each filter parameter explicitly plus any other instance variables that
-     * are needed into the new instance. Here is some example code from ReadH5Ebsd
-     */
-    //    DREAM3D_COPY_INSTANCEVAR(OutputFile)
-    //    DREAM3D_COPY_INSTANCEVAR(ZStartIndex)
-    //    DREAM3D_COPY_INSTANCEVAR(ZEndIndex)
-    //    DREAM3D_COPY_INSTANCEVAR(ZResolution)
   }
   return filter;
 }
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+const QString FuseVolumes::getCompiledLibraryName()
+{ return DataFusionConstants::DataFusionBaseName; }
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+const QString FuseVolumes::getGroupName()
+{ return DREAM3D::FilterGroups::Unsupported; }
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+const QString FuseVolumes::getHumanLabel()
+{ return "Fuse Volumes"; }
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+const QString FuseVolumes::getSubGroupName()
+{ return "DataFusion"; }
 
