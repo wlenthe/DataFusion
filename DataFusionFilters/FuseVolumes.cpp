@@ -7,7 +7,6 @@
 #include "DREAM3DLib/Common/Constants.h"
 #include "DREAM3DLib/FilterParameters/AbstractFilterParametersReader.h"
 #include "DREAM3DLib/FilterParameters/AbstractFilterParametersWriter.h"
-
 #include "DREAM3DLib/FilterParameters/AttributeMatrixSelectionFilterParameter.h"
 #include "DREAM3DLib/FilterParameters/StringFilterParameter.h"
 #include "DREAM3DLib/FilterParameters/LinkedChoicesFilterParameter.h"
@@ -15,10 +14,10 @@
 #include "DREAM3DLib/FilterParameters/DynamicTableFilterParameter.h"
 
 #ifdef DREAM3D_USE_PARALLEL_ALGORITHMS
-  #include <tbb/parallel_for.h>
-  #include <tbb/blocked_range3d.h>
-  #include <tbb/partitioner.h>
-  #include <tbb/task_scheduler_init.h>
+#include <tbb/parallel_for.h>
+#include <tbb/blocked_range3d.h>
+#include <tbb/partitioner.h>
+#include <tbb/task_scheduler_init.h>
 #endif
 
 #include <Eigen/Dense>
@@ -26,9 +25,9 @@
 #include "DataFusion/DataFusionConstants.h"
 
 #if (CMP_SIZEOF_SIZE_T == 4)
-  typedef int32_t DimType;
+typedef int32_t DimType;
 #else
-  typedef int64_t DimType;
+typedef int64_t DimType;
 #endif
 
 class FuseVolumesImpl
@@ -36,18 +35,18 @@ class FuseVolumesImpl
 
   public:
     FuseVolumesImpl(DimType* movingDims, DimType* referenceDims, float* movingOrign, float* referenceOrign, float* movingSpacing, float* referenceSpacing, Eigen::Matrix3f transform, Eigen::Vector3f translation, AttributeMatrix::Pointer movingAttMatt, AttributeMatrix::Pointer fixedAttMatt, QString prefix, int64_t* newIndicies) :
-    m_movingDims(movingDims),
-    m_movingOrigin(movingOrign),
-    m_movingResolution(movingSpacing),
-    m_referenceDims(referenceDims),
-    m_referenceOrigin(referenceOrign),
-    m_referenceResolution(referenceSpacing),
-    m_Transfomration(transform),
-    m_Translation(translation),
-    m_Prefix(prefix),
-    m_movingAtrMatPtr(movingAttMatt),
-    m_referenceAtrMatPtr(fixedAttMatt),
-    m_newIndicies(newIndicies)
+      m_movingDims(movingDims),
+      m_movingOrigin(movingOrign),
+      m_movingResolution(movingSpacing),
+      m_referenceDims(referenceDims),
+      m_referenceOrigin(referenceOrign),
+      m_referenceResolution(referenceSpacing),
+      m_Transfomration(transform),
+      m_Translation(translation),
+      m_Prefix(prefix),
+      m_movingAtrMatPtr(movingAttMatt),
+      m_referenceAtrMatPtr(fixedAttMatt),
+      m_newIndicies(newIndicies)
     {}
     virtual ~FuseVolumesImpl() {}
 
@@ -66,14 +65,14 @@ class FuseVolumesImpl
             //reference index -> reference position
             Eigen::Vector3f referencePosition;
             referencePosition<< i * m_referenceResolution[0] + m_referenceOrigin[0], j * m_referenceResolution[1] + m_referenceOrigin[1], k * m_referenceResolution[2] + m_referenceOrigin[2];
-            
+
             //reference position -> moving position
             Eigen::Vector3f movingPosition = m_Transfomration * referencePosition + m_Translation;
 
             //moving position -> nearest moving index;
-            int xIndex = std::round( ( movingPosition(0) - m_movingOrigin[0] ) / m_movingResolution[0] );
-            int yIndex = std::round( ( movingPosition(1) - m_movingOrigin[1] ) / m_movingResolution[1] );
-            int zIndex = std::round( ( movingPosition(2) - m_movingOrigin[2] ) / m_movingResolution[2] );
+            int xIndex = nearbyint( ( movingPosition(0) - m_movingOrigin[0] ) / m_movingResolution[0] );
+            int yIndex = nearbyint( ( movingPosition(1) - m_movingOrigin[1] ) / m_movingResolution[1] );
+            int zIndex = nearbyint( ( movingPosition(2) - m_movingOrigin[2] ) / m_movingResolution[2] );
 
             //make sure this is in bounds on the moving dataset
             if( xIndex >= 0 && yIndex >= 0 && zIndex >= 0 && xIndex < m_movingDims[0] && yIndex < m_movingDims[1] && zIndex < m_movingDims[2] )
@@ -120,10 +119,10 @@ class FuseVolumesImpl
 // -----------------------------------------------------------------------------
 FuseVolumes::FuseVolumes() :
   AbstractFilter(),
-  m_ReferenceVolume(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, ""),
-  m_MovingVolume(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, ""),
   m_Prefix("fused_"),
   m_TransformationType(0),
+  m_ReferenceVolume(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, ""),
+  m_MovingVolume(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, ""),
   m_TransformationArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DataFusionConstants::Transformation, DataFusionConstants::Transformation)
 {
   std::vector<std::vector <double> > identity(3, std::vector<double>(4, 0));
@@ -147,26 +146,28 @@ FuseVolumes::~FuseVolumes()
 void FuseVolumes::setupFilterParameters()
 {
   FilterParameterVector parameters;
-  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Reference Atrribute Matrix", "ReferenceVolume", getReferenceVolume(), FilterParameter::RequiredArray, 0));
-  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Moving Atrribute Matrix", "MovingVolume", getMovingVolume(), FilterParameter::RequiredArray, 0));
+  AttributeMatrixSelectionFilterParameter::DataStructureRequirements amReq;
+  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Reference Atrribute Matrix", "ReferenceVolume", getReferenceVolume(), FilterParameter::RequiredArray, amReq));
+  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Moving Atrribute Matrix", "MovingVolume", getMovingVolume(), FilterParameter::RequiredArray, amReq));
   parameters.push_back(StringFilterParameter::New("Merged Array Prefix", "Prefix", getPrefix(), FilterParameter::Parameter));
 
   {
     QVector<QString> choices;
-      choices.push_back("Computed Value");
-      choices.push_back("Manual Entry");
+    choices.push_back("Computed Value");
+    choices.push_back("Manual Entry");
     QStringList linkedProps;
-      linkedProps << "TransformationArrayPath" << "ManualTransformation";
+    linkedProps << "TransformationArrayPath" << "ManualTransformation";
     LinkedChoicesFilterParameter::Pointer parameter = LinkedChoicesFilterParameter::New();
-      parameter->setHumanLabel("Transformation Type");
-      parameter->setPropertyName("TransformationType");
-      parameter->setChoices(choices);
-      parameter->setLinkedProperties(linkedProps);
-      parameter->setCategory(FilterParameter::Parameter);
+    parameter->setHumanLabel("Transformation Type");
+    parameter->setPropertyName("TransformationType");
+    parameter->setChoices(choices);
+    parameter->setLinkedProperties(linkedProps);
+    parameter->setCategory(FilterParameter::Parameter);
     parameters.push_back(parameter);
   }
 
-  parameters.push_back(DataArraySelectionFilterParameter::New("Transformation", "TransformationArrayPath", getTransformationArrayPath(), FilterParameter::RequiredArray, 0));
+  DataArraySelectionFilterParameter::DataStructureRequirements req;
+  parameters.push_back(DataArraySelectionFilterParameter::New("Transformation", "TransformationArrayPath", getTransformationArrayPath(), FilterParameter::RequiredArray, req));
 
   QStringList headers;
   headers << "" << "" << "" << "";
@@ -198,13 +199,13 @@ int FuseVolumes::writeFilterParameters(AbstractFilterParametersWriter* writer, i
 {
   writer->openFilterGroup(this, index);
   DREAM3D_FILTER_WRITE_PARAMETER(FilterVersion)
-  DREAM3D_FILTER_WRITE_PARAMETER(ReferenceVolume)
-  DREAM3D_FILTER_WRITE_PARAMETER(MovingVolume)
-  DREAM3D_FILTER_WRITE_PARAMETER(Prefix)
-  DREAM3D_FILTER_WRITE_PARAMETER(TransformationType)
-  DREAM3D_FILTER_WRITE_PARAMETER(TransformationArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(ManualTransformation)
-  writer->closeFilterGroup();
+      DREAM3D_FILTER_WRITE_PARAMETER(ReferenceVolume)
+      DREAM3D_FILTER_WRITE_PARAMETER(MovingVolume)
+      DREAM3D_FILTER_WRITE_PARAMETER(Prefix)
+      DREAM3D_FILTER_WRITE_PARAMETER(TransformationType)
+      DREAM3D_FILTER_WRITE_PARAMETER(TransformationArrayPath)
+      DREAM3D_FILTER_WRITE_PARAMETER(ManualTransformation)
+      writer->closeFilterGroup();
   return ++index; // we want to return the next index that was just written to
 }
 
@@ -235,14 +236,14 @@ void FuseVolumes::dataCheck()
   //get computed transformation if needed
   if(0 == getTransformationType())
   {
-      QVector<size_t> dims(2, 4);
-      m_TransformationPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<float>, AbstractFilter>(this, getTransformationArrayPath(), dims);
-      if( NULL != m_TransformationPtr.lock().get() )
-      { m_Transformation = m_TransformationPtr.lock()->getPointer(0); }
+    QVector<size_t> dims(2, 4);
+    m_TransformationPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<float>, AbstractFilter>(this, getTransformationArrayPath(), dims);
+    if( NULL != m_TransformationPtr.lock().get() )
+    { m_Transformation = m_TransformationPtr.lock()->getPointer(0); }
   }
 
   //loop over attribute arrays of moving, copying to source
-  QList<QString> movingArrays = moveCellAttrMat->getAttributeArrayNames();  
+  QList<QString> movingArrays = moveCellAttrMat->getAttributeArrayNames();
   size_t numTuples = refCellAttrMat->getNumTuples();
   for(int i = 0; i < movingArrays.size(); i++)
   {
@@ -264,7 +265,7 @@ void FuseVolumes::dataCheck()
     {
       //add equivilent array to reference attr. mat with new name
       IDataArray::Pointer newFixedArray = movingArrPtr->createNewArray(numTuples, movingArrPtr->getComponentDimensions(), newName, true);
-      refCellAttrMat->addAttributeArray(newName, newFixedArray);    
+      refCellAttrMat->addAttributeArray(newName, newFixedArray);
     }
     else
     {
@@ -301,7 +302,7 @@ void FuseVolumes::dataCheck()
           notifyErrorMessage(getHumanLabel(), ss, getErrorCondition());
           return;
         }
-        
+
         AttributeMatrix::Pointer movingAtrMatPtr = moveDataContainer->getAttributeMatrix(movingAttMatList[i]);
         if(movingAtrMatPtr.get() != NULL)
         {
@@ -386,17 +387,17 @@ void FuseVolumes::execute()
   if(0 == getTransformationType())
   {
     affine << m_Transformation[0], m_Transformation[1], m_Transformation[2], m_Transformation[3],
-              m_Transformation[4], m_Transformation[5], m_Transformation[6], m_Transformation[7],
-              m_Transformation[8], m_Transformation[9], m_Transformation[10], m_Transformation[11],
-              m_Transformation[12], m_Transformation[13], m_Transformation[14], m_Transformation[15];
+        m_Transformation[4], m_Transformation[5], m_Transformation[6], m_Transformation[7],
+        m_Transformation[8], m_Transformation[9], m_Transformation[10], m_Transformation[11],
+        m_Transformation[12], m_Transformation[13], m_Transformation[14], m_Transformation[15];
   }
   else if(1 == getTransformationType())
   {
     std::vector<std::vector<double> > t = getManualTransformation().getTableData();
-    affine << t[0][0], t[0][1], t[0][2], t[0][3], 
-              t[1][0], t[1][1], t[1][2], t[1][3],
-              t[2][0], t[2][1], t[2][2], t[2][3],
-              0, 0, 0, 1;
+    affine << t[0][0], t[0][1], t[0][2], t[0][3],
+        t[1][0], t[1][1], t[1][2], t[1][3],
+        t[2][0], t[2][1], t[2][2], t[2][3],
+        0, 0, 0, 1;
   }
   Eigen::Matrix4f inverseAffine = affine.inverse();
 
@@ -419,7 +420,7 @@ void FuseVolumes::execute()
   if (doParallel == true)
   {
     tbb::parallel_for(tbb::blocked_range3d<size_t, size_t, size_t>(0, refDims[2]-1, 0, refDims[1]-1, 0, refDims[0]-1),
-                      FuseVolumesImpl(movDims, refDims, movingOrigin, refOrigin, movingRes, refRes, transform, translation, refCellAttrMat, moveCellAttrMat, m_Prefix, newindicies), tbb::auto_partitioner());
+        FuseVolumesImpl(movDims, refDims, movingOrigin, refOrigin, movingRes, refRes, transform, translation, refCellAttrMat, moveCellAttrMat, m_Prefix, newindicies), tbb::auto_partitioner());
   }
   else
 #endif

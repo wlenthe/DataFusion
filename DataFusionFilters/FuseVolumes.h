@@ -8,7 +8,6 @@
 #include "DREAM3DLib/DREAM3DLib.h"
 #include "DREAM3DLib/Common/DREAM3DSetGetMacros.h"
 #include "DREAM3DLib/Common/AbstractFilter.h"
-
 #include "DREAM3DLib/FilterParameters/DynamicTableData.h"
 
 /**
@@ -100,7 +99,7 @@ class FuseVolumes : public AbstractFilter
     /**
      * @brief updateFilterParameters Emitted when the Filter requests all the latest Filter parameters
      * be pushed from a user-facing control (such as a widget)
-     * @param filter Filter instance pointer 
+     * @param filter Filter instance pointer
      */
     void updateFilterParameters(AbstractFilter* filter);
 

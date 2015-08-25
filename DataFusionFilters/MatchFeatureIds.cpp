@@ -70,25 +70,27 @@ MatchFeatureIds::~MatchFeatureIds()
 void MatchFeatureIds::setupFilterParameters()
 {
   FilterParameterVector parameters;
-  parameters.push_back(DataArraySelectionFilterParameter::New("Reference Feature Ids", "ReferenceFeatureIdsArrayPath", getReferenceFeatureIdsArrayPath(), FilterParameter::RequiredArray));
-  parameters.push_back(DataArraySelectionFilterParameter::New("Moving Feature Ids", "MovingFeatureIdsArrayPath", getMovingFeatureIdsArrayPath(), FilterParameter::RequiredArray));
-  
-  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Reference Cell Feature Attribute Matrix", "ReferenceCellFeatureAttributeMatrixPath", getReferenceCellFeatureAttributeMatrixPath(), FilterParameter::RequiredArray));
-  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Moving Cell Feature Attribute Matrix", "MovingCellFeatureAttributeMatrixPath", getMovingCellFeatureAttributeMatrixPath(), FilterParameter::RequiredArray));
-  
+  DataArraySelectionFilterParameter::DataStructureRequirements req;
+  parameters.push_back(DataArraySelectionFilterParameter::New("Reference Feature Ids", "ReferenceFeatureIdsArrayPath", getReferenceFeatureIdsArrayPath(), FilterParameter::RequiredArray, req));
+  parameters.push_back(DataArraySelectionFilterParameter::New("Moving Feature Ids", "MovingFeatureIdsArrayPath", getMovingFeatureIdsArrayPath(), FilterParameter::RequiredArray, req));
+
+  AttributeMatrixSelectionFilterParameter::DataStructureRequirements amReq;
+  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Reference Cell Feature Attribute Matrix", "ReferenceCellFeatureAttributeMatrixPath", getReferenceCellFeatureAttributeMatrixPath(), FilterParameter::RequiredArray, amReq));
+  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Moving Cell Feature Attribute Matrix", "MovingCellFeatureAttributeMatrixPath", getMovingCellFeatureAttributeMatrixPath(), FilterParameter::RequiredArray, amReq));
+
   QVector<QString> choices;
-    choices.push_back("Jaccard");
-    choices.push_back("Sorensen-Dice");
-    choices.push_back("Ochiai (cosine)");  
+  choices.push_back("Jaccard");
+  choices.push_back("Sorensen-Dice");
+  choices.push_back("Ochiai (cosine)");
   ChoiceFilterParameter::Pointer parameter = ChoiceFilterParameter::New();
-    parameter->setHumanLabel("Similairty Coefficient");
-    parameter->setPropertyName("Metric");
-    parameter->setChoices(choices);
-    parameter->setCategory(FilterParameter::Parameter);
+  parameter->setHumanLabel("Similairty Coefficient");
+  parameter->setPropertyName("Metric");
+  parameter->setChoices(choices);
+  parameter->setCategory(FilterParameter::Parameter);
   parameters.push_back(parameter);
 
   parameters.push_back(DoubleFilterParameter::New("Minimum Metric Value", "MetricThreshold", getMetricThreshold(), FilterParameter::Parameter));
-  
+
   parameters.push_back(StringFilterParameter::New("Matched Similarity Coefficient", "OverlapArrayName", getOverlapArrayName(), FilterParameter::CreatedArray));
   parameters.push_back(StringFilterParameter::New("Reference Unique Grains", "ReferenceUniqueArrayName", getReferenceUniqueArrayName(), FilterParameter::CreatedArray));
   parameters.push_back(StringFilterParameter::New("Moving Unique Grains", "MovingUniqueArrayName", getMovingUniqueArrayName(), FilterParameter::CreatedArray));
@@ -97,15 +99,15 @@ void MatchFeatureIds::setupFilterParameters()
   linkedProps<<"OrientationTolerance"<<"ReferenceQuatsArrayPath"<<"ReferencePhasesArrayPath"<<"ReferenceCrystalStructuresArrayPath"<<"MovingQuatsArrayPath"<<"MovingPhasesArrayPath"<<"MovingCrystalStructuresArrayPath";
   parameters.push_back(LinkedBooleanFilterParameter::New("Require Orientation Match", "UseOrientations", getUseOrientations(), linkedProps, FilterParameter::Parameter));
   parameters.push_back(DoubleFilterParameter::New("Orientation Tolerance Angle (degrees)", "OrientationTolerance", getOrientationTolerance(), FilterParameter::Parameter));
-  
-  parameters.push_back(DataArraySelectionFilterParameter::New("Reference Features Average Quats", "ReferenceQuatsArrayPath", getReferenceQuatsArrayPath(), FilterParameter::RequiredArray));
-  parameters.push_back(DataArraySelectionFilterParameter::New("Moving Features Average Quats", "MovingQuatsArrayPath", getMovingQuatsArrayPath(), FilterParameter::RequiredArray));
-  
-  parameters.push_back(DataArraySelectionFilterParameter::New("Reference Features Phases", "ReferencePhasesArrayPath", getReferencePhasesArrayPath(), FilterParameter::RequiredArray));
-  parameters.push_back(DataArraySelectionFilterParameter::New("Moving Features Phases", "MovingPhasesArrayPath", getMovingPhasesArrayPath(), FilterParameter::RequiredArray));
- 
-  parameters.push_back(DataArraySelectionFilterParameter::New("Reference Features Crystal Structures", "ReferenceCrystalStructuresArrayPath", getReferenceCrystalStructuresArrayPath(), FilterParameter::RequiredArray));
-  parameters.push_back(DataArraySelectionFilterParameter::New("Moving Features Crystal Structures", "MovingCrystalStructuresArrayPath", getMovingCrystalStructuresArrayPath(), FilterParameter::RequiredArray));
+
+  parameters.push_back(DataArraySelectionFilterParameter::New("Reference Features Average Quats", "ReferenceQuatsArrayPath", getReferenceQuatsArrayPath(), FilterParameter::RequiredArray, req));
+  parameters.push_back(DataArraySelectionFilterParameter::New("Moving Features Average Quats", "MovingQuatsArrayPath", getMovingQuatsArrayPath(), FilterParameter::RequiredArray, req));
+
+  parameters.push_back(DataArraySelectionFilterParameter::New("Reference Features Phases", "ReferencePhasesArrayPath", getReferencePhasesArrayPath(), FilterParameter::RequiredArray, req));
+  parameters.push_back(DataArraySelectionFilterParameter::New("Moving Features Phases", "MovingPhasesArrayPath", getMovingPhasesArrayPath(), FilterParameter::RequiredArray, req));
+
+  parameters.push_back(DataArraySelectionFilterParameter::New("Reference Features Crystal Structures", "ReferenceCrystalStructuresArrayPath", getReferenceCrystalStructuresArrayPath(), FilterParameter::RequiredArray, req));
+  parameters.push_back(DataArraySelectionFilterParameter::New("Moving Features Crystal Structures", "MovingCrystalStructuresArrayPath", getMovingCrystalStructuresArrayPath(), FilterParameter::RequiredArray, req));
   setFilterParameters(parameters);
 }
 
@@ -119,7 +121,7 @@ void MatchFeatureIds::readFilterParameters(AbstractFilterParametersReader* reade
   setMovingFeatureIdsArrayPath( reader->readDataArrayPath( "MovingFeatureIdsArrayPath", getMovingFeatureIdsArrayPath() ) );
   setReferenceCellFeatureAttributeMatrixPath( reader->readDataArrayPath("ReferenceCellFeatureAttributeMatrixPath", getReferenceCellFeatureAttributeMatrixPath() ) );
   setMovingCellFeatureAttributeMatrixPath( reader->readDataArrayPath("MovingCellFeatureAttributeMatrixPath", getMovingCellFeatureAttributeMatrixPath() ) );
-  
+
   setMetric( reader->readValue("Metric", getMetric()) );
   setMetricThreshold( reader->readValue("MetricThreshold", getMetricThreshold() ) );
   setReferenceUniqueArrayName( reader->readString("ReferenceUniqueArrayName", getReferenceUniqueArrayName() ) );
@@ -133,7 +135,7 @@ void MatchFeatureIds::readFilterParameters(AbstractFilterParametersReader* reade
   setMovingQuatsArrayPath( reader->readDataArrayPath( "MovingQuatsArrayPath", getMovingQuatsArrayPath() ) );
   setMovingPhasesArrayPath( reader->readDataArrayPath( "MovingPhasesArrayPath", getMovingPhasesArrayPath() ) );
   setMovingCrystalStructuresArrayPath( reader->readDataArrayPath( "MovingCrystalStructuresArrayPath", getMovingCrystalStructuresArrayPath() ) );
-  
+
   reader->closeFilterGroup();
 }
 
@@ -154,7 +156,7 @@ int MatchFeatureIds::writeFilterParameters(AbstractFilterParametersWriter* write
   DREAM3D_FILTER_WRITE_PARAMETER(OverlapArrayName)
   DREAM3D_FILTER_WRITE_PARAMETER(ReferenceUniqueArrayName)
   DREAM3D_FILTER_WRITE_PARAMETER(MovingUniqueArrayName)
-  
+
   DREAM3D_FILTER_WRITE_PARAMETER(UseOrientations)
   DREAM3D_FILTER_WRITE_PARAMETER(OrientationTolerance)
   DREAM3D_FILTER_WRITE_PARAMETER(ReferenceQuatsArrayPath)
@@ -194,7 +196,7 @@ void MatchFeatureIds::dataCheck()
   if( NULL != m_ReferenceFeatureIdsPtr.lock().get() )
   { m_ReferenceFeatureIds = m_ReferenceFeatureIdsPtr.lock()->getPointer(0); }
   if(getErrorCondition() >= 0) { referenceDataArrayPaths.push_back(getReferenceFeatureIdsArrayPath()); }
-  
+
   m_MovingFeatureIdsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<int32_t>, AbstractFilter>(this, getMovingFeatureIdsArrayPath(), dims);
   if( NULL != m_MovingFeatureIdsPtr.lock().get() )
   { m_MovingFeatureIds = m_MovingFeatureIdsPtr.lock()->getPointer(0); }
@@ -210,7 +212,7 @@ void MatchFeatureIds::dataCheck()
     if( NULL != m_ReferenceQuatsPtr.lock().get() )
     { m_ReferenceQuats = m_ReferenceQuatsPtr.lock()->getPointer(0); }
     if(getErrorCondition() >= 0) { referenceDataArrayPaths.push_back(getReferenceQuatsArrayPath()); }
-    
+
     m_MovingQuatsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<float>, AbstractFilter>(this, getMovingQuatsArrayPath(), dims);
     if( NULL != m_MovingQuatsPtr.lock().get() )
     { m_MovingQuats = m_MovingQuatsPtr.lock()->getPointer(0); }
@@ -221,7 +223,7 @@ void MatchFeatureIds::dataCheck()
     if( NULL != m_ReferencePhasesPtr.lock().get() )
     { m_ReferencePhases = m_ReferencePhasesPtr.lock()->getPointer(0); }
     if(getErrorCondition() >= 0) { referenceDataArrayPaths.push_back(getReferencePhasesArrayPath()); }
-    
+
     m_MovingPhasesPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<int32_t>, AbstractFilter>(this, getMovingPhasesArrayPath(), dims);
     if( NULL != m_MovingPhasesPtr.lock().get() )
     { m_MovingPhases = m_MovingPhasesPtr.lock()->getPointer(0); }
@@ -230,7 +232,7 @@ void MatchFeatureIds::dataCheck()
     m_ReferenceCrystalStructuresPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<unsigned int>, AbstractFilter>(this, getReferenceCrystalStructuresArrayPath(), dims);
     if( NULL != m_ReferenceCrystalStructuresPtr.lock().get() )
     { m_ReferenceCrystalStructures = m_ReferenceCrystalStructuresPtr.lock()->getPointer(0); }
-    
+
     m_MovingCrystalStructuresPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<unsigned int>, AbstractFilter>(this, getMovingCrystalStructuresArrayPath(), dims);
     if( NULL != m_MovingCrystalStructuresPtr.lock().get() )
     { m_MovingCrystalStructures = m_MovingCrystalStructuresPtr.lock()->getPointer(0); }
@@ -320,7 +322,7 @@ void MatchFeatureIds::execute()
       referenceVolumes[referenceId]++;
       movingVolumes[movingId]++;
       intersections[movingId*maxReferenceId+referenceId]++;
-    }  
+    }
   }
 
   // custom class to holding pair data
@@ -329,7 +331,7 @@ void MatchFeatureIds::execute()
     int referenceId;
     int movingId;
     float index;
-    const bool operator< (const OverlapPair &other) const {return index < other.index;} 
+    const bool operator< (const OverlapPair &other) const {return index < other.index;}
   };
 
   // compute selected metric for each pair of overlapping grains
@@ -356,12 +358,12 @@ void MatchFeatureIds::execute()
             {
               overlapPair.index = (float)overlap/(movingVolumes[i]+referenceVolumes[j]-overlap);
             } break;
-            
+
             case 1://dice
             {
               overlapPair.index = (float)(2*overlap)/(movingVolumes[i]+referenceVolumes[j]);
             } break;
-            
+
             case 2://cosine
             {
               overlapPair.index = (float)overlap/sqrt(movingVolumes[i]*referenceVolumes[j]);
@@ -393,7 +395,7 @@ void MatchFeatureIds::execute()
     {
       if(m_UseOrientations)
       {
-        //already checked for same structure during 
+        //already checked for same structure during
         int referencePhase = m_ReferenceCrystalStructures[m_ReferencePhases[referenceId]];
         int movingPhase = m_MovingCrystalStructures[m_MovingPhases[movingId]];
         if(referencePhase==movingPhase && referencePhase!=Ebsd::CrystalStructure::UnknownCrystalStructure)
