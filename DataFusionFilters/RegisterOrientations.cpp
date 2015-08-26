@@ -191,15 +191,26 @@ void RegisterOrientations::execute()
   std::vector<size_t> sharedFeatures;
   sharedFeatures.reserve(numFeatures);
 
-  for(size_t i = 0; i<numFeatures; i++)
+  for(size_t i = 0; i < numFeatures; i++)
   {
     if(getUseGoodFeatures())
     {
-      if(m_ReferenceGoodFeatures[i] && m_MovingGoodFeatures[i])
+      if(!(m_ReferenceGoodFeatures[i] && m_MovingGoodFeatures[i]))
+      {
         continue;
+      }
     }
     if(m_ReferenceCrystalStructures[m_ReferencePhases[i]] == m_MovingCrystalStructures[m_MovingPhases[i]])
+    {
       sharedFeatures.push_back(i);
+    }
+  }
+
+  if(sharedFeatures.size() < 2)
+  {
+    setErrorCondition(-2);
+    notifyErrorMessage(getHumanLabel(), "failed to compute rotation (at least 2 shared features required)", getErrorCondition());
+    return;
   }
 
   //build symmetry quat list for all structures
@@ -215,13 +226,24 @@ void RegisterOrientations::execute()
   }
 
   //loop over matched features determining best rotation from each pair (testing against all other pairs)
-  std::vector<QuatF> bestQuats(sharedFeatures.size());
-  std::vector<float> avgMisorientations(sharedFeatures.size());
+  size_t matchCount = 0;  
+  double minMisoAngle = getMinMiso() * M_PI / 180.0f;
+
+  /***************************************************************************************************************************************
+   *
+   * Quat to hold the average rotation
+   * This should be done with cubochoric once the orientation library supports it
+   *
+   ***************************************************************************************************************************************/
+  QuatF rotation = QuaternionMathF::New(0, 0, 0, 0);
+
   for(size_t i = 0; i < sharedFeatures.size(); i++)
   {
     //compute difference in orientation
     float minAvgMiso = 999.9f;
-    QuatF gMovInv, candidateQuat, bestQuat;
+    QuatF gRef, gMovInv, candidateQuat, bestQuat;
+    QuaternionMathF::Identity(bestQuat);
+    QuaternionMathF::Copy(referenceQuats[sharedFeatures[i]], gRef);
     QuaternionMathF::Copy(movingQuats[sharedFeatures[i]], gMovInv);
     QuaternionMathF::Conjugate(gMovInv);
     uint32_t xtal = m_ReferenceCrystalStructures[m_ReferencePhases[sharedFeatures[i]]];//already checked that phases match
@@ -232,29 +254,26 @@ void RegisterOrientations::execute()
       QuatF tempQuat;
       float avgMiso = 0.0f;
       QuaternionMathF::Multiply(gMovInv, symOpsList[xtal][j], tempQuat);
-      QuaternionMathF::Multiply(tempQuat, referenceQuats[sharedFeatures[i]], candidateQuat);
+      QuaternionMathF::Multiply(tempQuat, gRef, candidateQuat);
 
       //loop over all other pairs finding the resuling misorientation if the candidate rotation is applied to each
       for(size_t k = 0; k < sharedFeatures.size(); k++)
       {
         if(k != i)
         {
-          QuatF otherGMov, otherGRef, otherGMovRotInv;
+          QuatF otherGMovRotInv;
           QuaternionMathF::Multiply(movingQuats[sharedFeatures[k]], candidateQuat, otherGMovRotInv);
           QuaternionMathF::Conjugate(otherGMovRotInv);
+          QuaternionMathF::Multiply(referenceQuats[sharedFeatures[k]], otherGMovRotInv, tempQuat);
 
-          float cos_min_angle = 0.0f;
+          float cosMinAngle = 0.0f;
           for(int l = 0; l < symOpsList[xtal].size(); l++)
           {
-            QuatF misoQuat;
-            QuaternionMathF::Multiply(otherGMovRotInv, symOpsList[xtal][l], tempQuat);
-            QuaternionMathF::Multiply(tempQuat, referenceQuats[sharedFeatures[k]], misoQuat);
-            QuaternionMathF::ElementWiseAbs(misoQuat);
-
-            if(misoQuat.w > cos_min_angle)
-              cos_min_angle = misoQuat.w;
+            float cosAngle = fabs(tempQuat.w * symOpsList[xtal][l].w - tempQuat.x * symOpsList[xtal][l].x - tempQuat.y * symOpsList[xtal][l].y - tempQuat.z * symOpsList[xtal][l].z);
+            if(cosAngle > cosMinAngle)
+              cosMinAngle = cosAngle;
           }
-          avgMiso += acos(std::min(cos_min_angle, 1.0f));
+          avgMiso += acos(std::min(cosMinAngle, 1.0f));
         }
       }
       avgMiso /= static_cast<float>(sharedFeatures.size() - 1);
@@ -268,32 +287,22 @@ void RegisterOrientations::execute()
 
     //convert the average misorientation of the best match to degrees and add best match to list of matches
     if(bestQuat.w < 0) QuaternionMathF::Negate(bestQuat);//only consider rotations 0-180
-    QuaternionMathF::Copy(bestQuat, bestQuats[i]);
-    avgMisorientations[i] = 2.0f * minAvgMiso;
+    if(2.0f * minAvgMiso < minMisoAngle)
+    {
+      QuaternionMathF::Add(rotation, bestQuat, rotation);
+      matchCount++;
+    }
   }
 
-  //find average rotation
-  /***************************************************************************************************************************************
-   *
-   * This should be done by converting to cubochoric, averaging, and converting back to a quat (once the orientation library supports it)
-   *
-   ***************************************************************************************************************************************/
-  double minMisoAngle = getMinMiso() * M_PI / 180.0f;
-  QuatF rotation = QuaternionMathF::New(0, 0, 0, 0);
-  for(int i = 0; i<bestQuats.size(); i++)
+  //find average rotation and apply
+  if(0 == matchCount)
   {
-    if(avgMisorientations[i] < minMisoAngle)
-      QuaternionMathF::Add(rotation, bestQuats[i], rotation);
-  }
-
-  if(0.0f == rotation.x && 0.0f == rotation.y && 0.0f == rotation.z && 0.0f == rotation.w)
-  {
-    notifyErrorMessage(getHumanLabel(), "failed to compute rotation (no rotations within tolerance)", -1);
+    setErrorCondition(-3);
+    notifyErrorMessage(getHumanLabel(), "failed to compute rotation (no rotations within tolerance)", getErrorCondition());
     return;
   }
 
-  //apply rotation to align quats 'moving' quats
-  QuaternionMathF::UnitQuaternion(rotation);
+  QuaternionMathF::UnitQuaternion(rotation);//for cubochoric divide by matchCount 
   for(int i = 0; i < movingNumFeatures; i++)
   {
     QuatF correctedQuat;
