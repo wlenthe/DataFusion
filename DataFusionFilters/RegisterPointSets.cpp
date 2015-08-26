@@ -463,5 +463,5 @@ const QString RegisterPointSets::getHumanLabel()
 //
 // -----------------------------------------------------------------------------
 const QString RegisterPointSets::getSubGroupName()
-{ return "DataFusion"; }
+{ return DataFusionConstants::FilterGroups::DataFusionFilters; }
 

@@ -514,5 +514,5 @@ const QString FuseVolumes::getHumanLabel()
 //
 // -----------------------------------------------------------------------------
 const QString FuseVolumes::getSubGroupName()
-{ return "DataFusion"; }
+{ return DataFusionConstants::FilterGroups::DataFusionFilters; }
 

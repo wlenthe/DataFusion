@@ -348,5 +348,5 @@ const QString RegisterOrientations::getHumanLabel()
 //
 // -----------------------------------------------------------------------------
 const QString RegisterOrientations::getSubGroupName()
-{ return "DataFusion"; }
+{ return DataFusionConstants::FilterGroups::DataFusionFilters; }
 

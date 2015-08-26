@@ -501,5 +501,5 @@ const QString MatchFeatureIds::getHumanLabel()
 //
 // -----------------------------------------------------------------------------
 const QString MatchFeatureIds::getSubGroupName()
-{ return "DataFusion"; }
+{ return DataFusionConstants::FilterGroups::DataFusionFilters; }
 
