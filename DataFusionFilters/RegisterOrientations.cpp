@@ -27,16 +27,16 @@ RegisterOrientations::RegisterOrientations() :
   m_MovingCrystalStructuresArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellEnsembleAttributeMatrixName, DREAM3D::EnsembleData::CrystalStructures),
   m_ReferenceGoodFeaturesArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellFeatureAttributeMatrixName, DREAM3D::FeatureData::GoodFeatures),
   m_MovingGoodFeaturesArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellFeatureAttributeMatrixName, DREAM3D::FeatureData::GoodFeatures),
+  m_MinMiso(1.0),
+  m_UseGoodFeatures(true),
   m_ReferenceAvgQuats(NULL),
   m_MovingAvgQuats(NULL),
+  m_ReferenceGoodFeatures(NULL),
+  m_MovingGoodFeatures(NULL),
   m_ReferencePhases(NULL),
   m_MovingPhases(NULL),
   m_ReferenceCrystalStructures(NULL),
-  m_MovingCrystalStructures(NULL),
-  m_ReferenceGoodFeatures(NULL),
-  m_MovingGoodFeatures(NULL),
-  m_UseGoodFeatures(true),
-  m_MinMiso(1.0)
+  m_MovingCrystalStructures(NULL)
 {
   m_OrientationOps = SpaceGroupOps::getOrientationOpsQVector();
   setupFilterParameters();

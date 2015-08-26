@@ -38,24 +38,24 @@ class MatchFeatureIds : public AbstractFilter
     DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingFeatureIdsArrayPath)
     Q_PROPERTY(DataArrayPath MovingFeatureIdsArrayPath READ getMovingFeatureIdsArrayPath WRITE setMovingFeatureIdsArrayPath)
 
-        //orientation matching
-        DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceQuatsArrayPath)
-        Q_PROPERTY(DataArrayPath ReferenceQuatsArrayPath READ getReferenceQuatsArrayPath WRITE setReferenceQuatsArrayPath)
+    //orientation matching
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceQuatsArrayPath)
+    Q_PROPERTY(DataArrayPath ReferenceQuatsArrayPath READ getReferenceQuatsArrayPath WRITE setReferenceQuatsArrayPath)
 
-        DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingQuatsArrayPath)
-        Q_PROPERTY(DataArrayPath MovingQuatsArrayPath READ getMovingQuatsArrayPath WRITE setMovingQuatsArrayPath)
-        
-        DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferencePhasesArrayPath)
-        Q_PROPERTY(DataArrayPath ReferencePhasesArrayPath READ getReferencePhasesArrayPath WRITE setReferencePhasesArrayPath)
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingQuatsArrayPath)
+    Q_PROPERTY(DataArrayPath MovingQuatsArrayPath READ getMovingQuatsArrayPath WRITE setMovingQuatsArrayPath)
 
-        DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingPhasesArrayPath)
-        Q_PROPERTY(DataArrayPath MovingPhasesArrayPath READ getMovingPhasesArrayPath WRITE setMovingPhasesArrayPath)
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferencePhasesArrayPath)
+    Q_PROPERTY(DataArrayPath ReferencePhasesArrayPath READ getReferencePhasesArrayPath WRITE setReferencePhasesArrayPath)
 
-        DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceCrystalStructuresArrayPath)
-        Q_PROPERTY(DataArrayPath ReferenceCrystalStructuresArrayPath READ getReferenceCrystalStructuresArrayPath WRITE setReferenceCrystalStructuresArrayPath)
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingPhasesArrayPath)
+    Q_PROPERTY(DataArrayPath MovingPhasesArrayPath READ getMovingPhasesArrayPath WRITE setMovingPhasesArrayPath)
 
-        DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingCrystalStructuresArrayPath)
-        Q_PROPERTY(DataArrayPath MovingCrystalStructuresArrayPath READ getMovingCrystalStructuresArrayPath WRITE setMovingCrystalStructuresArrayPath)
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceCrystalStructuresArrayPath)
+    Q_PROPERTY(DataArrayPath ReferenceCrystalStructuresArrayPath READ getReferenceCrystalStructuresArrayPath WRITE setReferenceCrystalStructuresArrayPath)
+
+    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingCrystalStructuresArrayPath)
+    Q_PROPERTY(DataArrayPath MovingCrystalStructuresArrayPath READ getMovingCrystalStructuresArrayPath WRITE setMovingCrystalStructuresArrayPath)
 
     //output array names
     DREAM3D_FILTER_PARAMETER(QString, OverlapArrayName)
@@ -70,7 +70,7 @@ class MatchFeatureIds : public AbstractFilter
     //user paramters
     DREAM3D_FILTER_PARAMETER(int, Metric)
     Q_PROPERTY(int Metric READ getMetric WRITE setMetric)
-    
+
     DREAM3D_FILTER_PARAMETER(double, MetricThreshold)
     Q_PROPERTY(double MetricThreshold READ getMetricThreshold WRITE setMetricThreshold)
 
@@ -137,7 +137,7 @@ class MatchFeatureIds : public AbstractFilter
     /**
      * @brief updateFilterParameters Emitted when the Filter requests all the latest Filter parameters
      * be pushed from a user-facing control (such as a widget)
-     * @param filter Filter instance pointer 
+     * @param filter Filter instance pointer
      */
     void updateFilterParameters(AbstractFilter* filter);
 
@@ -181,5 +181,7 @@ class MatchFeatureIds : public AbstractFilter
     MatchFeatureIds(const MatchFeatureIds&); // Copy Constructor Not Implemented
     void operator=(const MatchFeatureIds&); // Operator '=' Not Implemented
 };
+
+
 
 #endif /* _MatchFeatureIds_H_ */
