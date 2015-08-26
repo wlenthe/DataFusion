@@ -282,178 +282,142 @@ void MatchFeatureIds::execute()
 
   if (getCancel() == true) { return; }
 
-  int64_t totalPoints = m_ReferenceFeatureIdsPtr.lock()->getNumberOfTuples();
+  //wrap quats
   QuatF* reference_quats = reinterpret_cast<QuatF*>(m_ReferenceQuats);
   QuatF* moving_quats = reinterpret_cast<QuatF*>(m_MovingQuats);
 
-  int maxReferenceId = m_ReferenceUniquePtr.lock()->getNumberOfTuples();
-  int maxMovingId = m_MovingUniquePtr.lock()->getNumberOfTuples();
+  //get number of voxels / grains
+  int64_t totalPoints = m_ReferenceFeatureIdsPtr.lock()->getNumberOfTuples();
+  int32_t referenceFeatures = m_ReferenceUniquePtr.lock()->getNumberOfTuples();
+  int32_t movingFeatures = m_MovingUniquePtr.lock()->getNumberOfTuples();
 
-  // create array to hold grain overlaps (ignoring grain 0)
-  std::vector<int> intersections(maxReferenceId * maxMovingId, 0);
-
-  // create arrays to hold grain volumes
-  std::vector<int> referenceVolumes(maxReferenceId, 0);
-  std::vector<int> movingVolumes(maxMovingId, 0);//initially everything but grain 0 unique (no grains have been matched)
+  //initialize output arrays
   m_ReferenceUnique[0] = false;
   m_MovingUnique[0] = false;
-  m_Overlap[0] = false;
-  for(int i = 1; i < maxReferenceId; i++)
-  {
-    m_ReferenceUnique[i] = true;
-  }
-  for(int i = 1; i < maxMovingId; i++)
-  {
-    m_MovingUnique[i] = true;
-    m_Overlap[i] = 0;
-  }
+  m_ReferenceUniquePtr.lock()->initializeWithValue(true);
+  m_MovingUniquePtr.lock()->initializeWithValue(true);
+  m_OverlapPtr.lock()->initializeWithValue(0.0f);
 
-  // loop over volume finding intersections and volumes
-  for(int i=0; i<totalPoints; i++)
+  //create working arrays to hold grain volumes and map (most grains will have 0 overlap) to store grain overlaps
+  std::vector<int32_t> referenceVolumes(referenceFeatures, 0);
+  std::vector<int32_t> movingVolumes(movingFeatures, 0);
+  std::map<int64_t, int32_t> intersections;
+
+  //loop over voxels finding grain intersections and volumes (in voxel count)
+  for(int32_t i = 0; i < totalPoints; i++)
   {
-    int referenceId = m_ReferenceFeatureIds[i];
-    int movingId = m_MovingFeatureIds[i];
-    if(referenceId>0 && movingId>0)
+    int32_t referenceId = m_ReferenceFeatureIds[i];
+    int32_t movingId = m_MovingFeatureIds[i];
+    if(referenceId > 0 && movingId > 0)
     {
-      referenceId--;
-      movingId--;
       referenceVolumes[referenceId]++;
       movingVolumes[movingId]++;
-      intersections[movingId*maxReferenceId+referenceId]++;
+      intersections[static_cast<int64_t>(referenceId) << 32 | movingId]++;
     }  
   }
 
   // custom class to holding pair data
   class OverlapPair {
-   public:
-    int referenceId;
-    int movingId;
-    float index;
-    const bool operator< (const OverlapPair &other) const {return index < other.index;} 
+    public:
+      OverlapPair(int32_t refId, int32_t movId, float metric) : m_refId(refId), m_movId(movId), m_metric(metric) {}
+      const bool operator< (const OverlapPair &other) const {return m_metric < other.m_metric;}
+      int32_t m_refId;
+      int32_t m_movId;
+      float m_metric;
   };
 
-  // compute selected metric for each pair of overlapping grains
+  //build list of overlapping pairs above threshold
   std::vector<OverlapPair> featureOverlaps;
-  for(int i=0; i<maxMovingId; i++)
+  featureOverlaps.reserve(intersections.size());
+  float orientationTolerance = m_OrientationTolerance * DREAM3D::Constants::k_Pi / 180.0f;
+  for(std::map<int64_t, int32_t>::iterator iter = intersections.begin(); iter != intersections.end(); ++iter)
   {
-    int index = i*maxReferenceId;
-    for(int j=0; j<maxReferenceId; j++)
+    //compute overlap metric
+    float overlap = static_cast<float>(iter->second);
+    int32_t movId = iter->first & 0x00000000FFFFFFFF;
+    int32_t refId = iter->first >> 32;
+    switch(m_Metric)
     {
-      int overlap = intersections[index+j];
-      //only consider pairs with finite overlap
-      if(overlap>0)
-      {
-        //if orientation match is required, only accumulate pairs that have matching crystal structures (phase is insufficient since they may have different cell ensemble matricies)
-        if( !m_UseOrientations || (m_UseOrientations && m_ReferenceCrystalStructures[ m_ReferencePhases[j+1] ] == m_MovingCrystalStructures[ m_MovingPhases[i+1] ]) )
-        {
-          OverlapPair overlapPair;
-          overlapPair.referenceId = j+1;
-          overlapPair.movingId = i+1;
-
-          switch(m_Metric)
-          {
-            case 0://jaccard
-            {
-              overlapPair.index = (float)overlap/(movingVolumes[i]+referenceVolumes[j]-overlap);
-            } break;
-            
-            case 1://dice
-            {
-              overlapPair.index = (float)(2*overlap)/(movingVolumes[i]+referenceVolumes[j]);
-            } break;
-            
-            case 2://cosine
-            {
-              overlapPair.index = (float)overlap/sqrt(movingVolumes[i]*referenceVolumes[j]);
-            } break;
-          }
-          if(overlapPair.index>=m_MetricThreshold) featureOverlaps.push_back(overlapPair);
-        }
-      }
+      case 0://jaccard
+        overlap = overlap / (movingVolumes[movId] + referenceVolumes[refId] - overlap);
+        break;
+      
+      case 1://dice
+        overlap = (2.0f * overlap) / (movingVolumes[movId] + referenceVolumes[refId]);
+        break;
+      
+      case 2://cosine
+        overlap = overlap / sqrt(movingVolumes[movId] * referenceVolumes[refId]);
+        break;
     }
-  }
-  std::sort(featureOverlaps.begin(), featureOverlaps.end());
 
-  // create map of current to new moving grain ids
-  std::vector<size_t> idMap(maxMovingId, -1);
-  idMap[0] = 0;
-
-  // begin assigning grains by overlap until (i) all moving grains have been assigned or (ii) overlapping pairs are exhausted
-  float orientationTolerance = m_OrientationTolerance*DREAM3D::Constants::k_Pi/180.0f;
-  int assignedGrains = 0;
-  while(assignedGrains<maxMovingId && featureOverlaps.size()>0)
-  {
-    //get last pair (highest index / most overlap)
-    int referenceId = featureOverlaps.back().referenceId;
-    int movingId = featureOverlaps.back().movingId;
-    bool assign = false;
-
-    //only check for match if both grains are still available
-    if(m_ReferenceUnique[referenceId] && m_MovingUnique[movingId])
+    if(overlap >= m_MetricThreshold)
     {
+      //check orientation tolerance if needed and add to list of potential matches
       if(m_UseOrientations)
       {
-        //already checked for same structure during 
-        int referencePhase = m_ReferenceCrystalStructures[m_ReferencePhases[referenceId]];
-        int movingPhase = m_MovingCrystalStructures[m_MovingPhases[movingId]];
-        if(referencePhase==movingPhase && referencePhase!=Ebsd::CrystalStructure::UnknownCrystalStructure)
+        int32_t refXtal = m_ReferenceCrystalStructures[m_ReferencePhases[refId]];
+        int32_t movXtal = m_MovingCrystalStructures[m_MovingPhases[movId]];
+        if(refXtal == movXtal && refXtal!=Ebsd::CrystalStructure::UnknownCrystalStructure)
         {
           float w, n1, n2, n3;
-          QuatF q1, q2;
-          QuaternionMathF::Copy(reference_quats[referenceId], q1);
-          QuaternionMathF::Copy(moving_quats[movingId], q2);
-          w = m_OrientationOps[referencePhase]->getMisoQuat( q1, q2, n1, n2, n3);
-          if(w<=orientationTolerance)
-          {
-            assign=true;
-          }
+          w = m_OrientationOps[refXtal]->getMisoQuat(reference_quats[refId], moving_quats[movId], n1, n2, n3);
+          if(w > orientationTolerance)
+            continue;
         }
       }
-      else
-      {
-        assign = true;
-      }
+      featureOverlaps.push_back(OverlapPair(refId, movId, overlap));
     }
-
-    if(assign)
-    {
-      idMap[movingId] = referenceId;
-      m_ReferenceUnique[referenceId] = false;
-      m_MovingUnique[movingId] = false;
-      m_Overlap[movingId] = featureOverlaps.back().index;
-      assignedGrains++;
-    }
-
-    //remove from list
-    featureOverlaps.pop_back();
   }
 
+  //sort pairs by metric and create map of current->new moving grain ids
+  std::sort(featureOverlaps.begin(), featureOverlaps.end());
+  std::vector<size_t> idMap(movingFeatures, -1);
+  idMap[0] = 0;
 
-  //if all the moving grains haven't been assigned append to higher grain ids
-  int index = maxReferenceId;
-  for(size_t i = 1; i < maxMovingId; i++)
+  //begin assigning grains by overlap until all moving grains have been assigned or overlapping pairs are exhausted
+  int32_t assignedGrains = 0;
+  while(assignedGrains < movingFeatures && !featureOverlaps.empty())
+  {
+    //match last pair (highest index / most overlap)
+    int32_t refId = featureOverlaps.back().m_refId;
+    int32_t movId = featureOverlaps.back().m_movId;
+    idMap[movId] = refId;
+
+    //update output arrays
+    m_ReferenceUnique[refId] = false;
+    m_MovingUnique[movId] = false;
+    m_Overlap[movId] = featureOverlaps.back().m_metric;
+
+    //remove from list + increment assigned pairs
+    featureOverlaps.pop_back();
+    assignedGrains++;
+  }
+
+  //append remaining unmatched moving grains with higher grain ids
+  int32_t index = referenceFeatures;
+  for(int32_t i = 1; i < movingFeatures; i++)
   {
     if(-1 == idMap[i])
     {
-      idMap[i] = index;
-      index++;
+      idMap[i] = index++;
     }
   }
 
-  // modify moving feature ids
-  for(int i=0; i<totalPoints; i++)
+  //update moving feature ids
+  for(int64_t i = 0; i < totalPoints; i++)
   {
-    m_MovingFeatureIds[i]=idMap[m_MovingFeatureIds[i]];
+    m_MovingFeatureIds[i] = idMap[m_MovingFeatureIds[i]];
   }
 
-  // resize and rearrange moving feature attribute arrays
-  QVector<size_t> tDims(1,index);
-  DataContainer::Pointer m = getDataContainerArray()->getDataContainer(getMovingCellFeatureAttributeMatrixPath().getDataContainerName());
-  AttributeMatrix::Pointer cellFeatureAttrMat = m->getAttributeMatrix(getMovingCellFeatureAttributeMatrixPath().getAttributeMatrixName());
+  //get moving feature attribute matrix and resize
+  QVector<size_t> tDims(1, index);
+  AttributeMatrix::Pointer cellFeatureAttrMat = getDataContainerArray()->getDataContainer(getMovingCellFeatureAttributeMatrixPath().getDataContainerName())->getAttributeMatrix(getMovingCellFeatureAttributeMatrixPath().getAttributeMatrixName());
   cellFeatureAttrMat->setTupleDimensions(tDims);
 
+  //reorder contained attribute arrays
   QList<QString> featureArrayNames = cellFeatureAttrMat->getAttributeArrayNames();
-  idMap.resize(tDims[0],0);
+  idMap.resize(tDims[0], 0);
   QVector<size_t> newOrder = QVector<size_t>::fromStdVector(idMap);
   for(QList<QString>::iterator iter = featureArrayNames.begin(); iter != featureArrayNames.end(); ++iter)
   {
