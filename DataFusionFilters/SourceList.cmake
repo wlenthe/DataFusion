@@ -17,6 +17,7 @@ set(_PublicFilters
   MatchFeatureIds
   RegisterOrientations
   RegisterPointSets
+  RenumberFeatures
 
 )
 
