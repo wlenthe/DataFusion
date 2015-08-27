@@ -12,7 +12,8 @@
 namespace DataFusionConstants
 {
   const QString DataFusionPluginFile("DataFusionPlugin");
-  const QString DataFusionPluginDisplayName("UCSBDataFusionPlugin");
+
+  const QString DataFusionPluginDisplayName("DataFusion");
   const QString DataFusionBaseName("DataFusionPlugin");
 
   const QString UniqueFeatures("UniqueFeatures");
@@ -21,7 +22,7 @@ namespace DataFusionConstants
 
   namespace FilterGroups
   {
-  	const QString DataFusionFilters("DataFusion");
+    const QString DataFusionFilters("DataFusion");
   }
 }
 
