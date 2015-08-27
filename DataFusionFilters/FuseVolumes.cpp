@@ -66,7 +66,7 @@ class FuseVolumesImpl
             //reference index -> reference position
             Eigen::Vector3f referencePosition;
             referencePosition<< i * m_referenceResolution[0] + m_referenceOrigin[0], j * m_referenceResolution[1] + m_referenceOrigin[1], k * m_referenceResolution[2] + m_referenceOrigin[2];
-            
+
             //reference position -> moving position
             Eigen::Vector3f movingPosition = m_Transfomration * referencePosition + m_Translation;
 
@@ -147,8 +147,9 @@ FuseVolumes::~FuseVolumes()
 void FuseVolumes::setupFilterParameters()
 {
   FilterParameterVector parameters;
-  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Reference Atrribute Matrix", "ReferenceVolume", getReferenceVolume(), FilterParameter::RequiredArray, 0));
-  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Moving Atrribute Matrix", "MovingVolume", getMovingVolume(), FilterParameter::RequiredArray, 0));
+  AttributeMatrixSelectionFilterParameter::DataStructureRequirements amReq;
+  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Reference Atrribute Matrix", "ReferenceVolume", getReferenceVolume(), FilterParameter::RequiredArray, amReq));
+  parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Moving Atrribute Matrix", "MovingVolume", getMovingVolume(), FilterParameter::RequiredArray, amReq));
   parameters.push_back(StringFilterParameter::New("Merged Array Prefix", "Prefix", getPrefix(), FilterParameter::Parameter));
 
   {
@@ -166,7 +167,8 @@ void FuseVolumes::setupFilterParameters()
     parameters.push_back(parameter);
   }
 
-  parameters.push_back(DataArraySelectionFilterParameter::New("Transformation", "TransformationArrayPath", getTransformationArrayPath(), FilterParameter::RequiredArray, 0));
+  DataArraySelectionFilterParameter::DataStructureRequirements req;
+  parameters.push_back(DataArraySelectionFilterParameter::New("Transformation", "TransformationArrayPath", getTransformationArrayPath(), FilterParameter::RequiredArray, req));
 
   QStringList headers;
   headers << "" << "" << "" << "";
@@ -242,7 +244,7 @@ void FuseVolumes::dataCheck()
   }
 
   //loop over attribute arrays of moving, copying to source
-  QList<QString> movingArrays = moveCellAttrMat->getAttributeArrayNames();  
+  QList<QString> movingArrays = moveCellAttrMat->getAttributeArrayNames();
   size_t numTuples = refCellAttrMat->getNumTuples();
   for(int i = 0; i < movingArrays.size(); i++)
   {
@@ -264,7 +266,7 @@ void FuseVolumes::dataCheck()
     {
       //add equivilent array to reference attr. mat with new name
       IDataArray::Pointer newFixedArray = movingArrPtr->createNewArray(numTuples, movingArrPtr->getComponentDimensions(), newName, true);
-      refCellAttrMat->addAttributeArray(newName, newFixedArray);    
+      refCellAttrMat->addAttributeArray(newName, newFixedArray);
     }
     else
     {
@@ -301,7 +303,7 @@ void FuseVolumes::dataCheck()
           notifyErrorMessage(getHumanLabel(), ss, getErrorCondition());
           return;
         }
-        
+
         AttributeMatrix::Pointer movingAtrMatPtr = moveDataContainer->getAttributeMatrix(movingAttMatList[i]);
         if(movingAtrMatPtr.get() != NULL)
         {
@@ -393,7 +395,7 @@ void FuseVolumes::execute()
   else if(1 == getTransformationType())
   {
     std::vector<std::vector<double> > t = getManualTransformation().getTableData();
-    affine << t[0][0], t[0][1], t[0][2], t[0][3], 
+    affine << t[0][0], t[0][1], t[0][2], t[0][3],
               t[1][0], t[1][1], t[1][2], t[1][3],
               t[2][0], t[2][1], t[2][2], t[2][3],
               0, 0, 0, 1;
