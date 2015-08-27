@@ -71,9 +71,9 @@ class FuseVolumesImpl
             Eigen::Vector3f movingPosition = m_Transfomration * referencePosition + m_Translation;
 
             //moving position -> nearest moving index;
-            int xIndex = std::round( ( movingPosition(0) - m_movingOrigin[0] ) / m_movingResolution[0] );
-            int yIndex = std::round( ( movingPosition(1) - m_movingOrigin[1] ) / m_movingResolution[1] );
-            int zIndex = std::round( ( movingPosition(2) - m_movingOrigin[2] ) / m_movingResolution[2] );
+            int xIndex = nearbyint( ( movingPosition(0) - m_movingOrigin[0] ) / m_movingResolution[0] );
+            int yIndex = nearbyint( ( movingPosition(1) - m_movingOrigin[1] ) / m_movingResolution[1] );
+            int zIndex = nearbyint( ( movingPosition(2) - m_movingOrigin[2] ) / m_movingResolution[2] );
 
             //make sure this is in bounds on the moving dataset
             if( xIndex >= 0 && yIndex >= 0 && zIndex >= 0 && xIndex < m_movingDims[0] && yIndex < m_movingDims[1] && zIndex < m_movingDims[2] )
