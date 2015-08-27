@@ -39,8 +39,9 @@ RenumberFeatures::~RenumberFeatures()
 void RenumberFeatures::setupFilterParameters()
 {
   FilterParameterVector parameters;
-  parameters.push_back(DataArraySelectionFilterParameter::New("Feature Ids", "FeatureIdsArrayPath", getFeatureIdsArrayPath(), FilterParameter::RequiredArray));
-  parameters.push_back(DataArraySelectionFilterParameter::New("Scalar Array", "ScalarArrayPath", getScalarArrayPath(), FilterParameter::RequiredArray));
+  DataArraySelectionFilterParameter::DataStructureRequirements req;
+  parameters.push_back(DataArraySelectionFilterParameter::New("Feature Ids", "FeatureIdsArrayPath", getFeatureIdsArrayPath(), FilterParameter::RequiredArray, req));
+  parameters.push_back(DataArraySelectionFilterParameter::New("Scalar Array", "ScalarArrayPath", getScalarArrayPath(), FilterParameter::RequiredArray, req));
 
   QVector<QString> choices;
     choices.push_back("Descending");
@@ -138,23 +139,16 @@ void RenumberFeatures::preflight()
   setInPreflight(false); // Inform the system this filter is NOT in preflight mode anymore.
 }
 
-
 template <typename T>
-class CompareFunctor {
+class RenumberFeaturesCompare {
   public:
-    CompareFunctor(IDataArray::Pointer pSort, int order) : m_ascending(1 == order) {m_sortArray = DataArray<T>::SafePointerDownCast(pSort.get())->getPointer(0);}
+    RenumberFeaturesCompare(IDataArray::Pointer pSort, int order) : m_ascending(1 == order) {m_sortArray = DataArray<T>::SafePointerDownCast(pSort.get())->getPointer(0);}
     bool operator()(const size_t& i, const size_t& j) const {return m_ascending ? m_sortArray[i] < m_sortArray[j] : m_sortArray[i] > m_sortArray[j];}
 
   private: 
     const T* m_sortArray;
     const bool m_ascending;
 };
-
-// template <typename T>
-// class AscendingCompare : CompareFunctor<T> {
-//   public:
-//     AscendingCompare(IDataArray::Pointer pSort) : CompareFunctor<T>(pSort) {}
-// };
 
 // -----------------------------------------------------------------------------
 //
@@ -171,7 +165,7 @@ void RenumberFeatures::execute()
   IDataArray::Pointer p = getDataContainerArray()->getDataContainer(m_ScalarArrayPath.getDataContainerName())->getAttributeMatrix(m_ScalarArrayPath.getAttributeMatrixName())->getAttributeArray(m_ScalarArrayPath.getDataArrayName());
   size_t numFeatures = p->getNumberOfTuples();
 
-  //create map of old-> new feature ids (initially maps to self)
+  //create map of old->new feature ids (initially maps to self)
   std::vector<size_t> fromIds(numFeatures);
   for(size_t i = 0; i < numFeatures; i++)
     fromIds[i] = i;
@@ -179,27 +173,27 @@ void RenumberFeatures::execute()
   //sort map by scalar array
   QString typeName = p->getTypeAsString();
   if (typeName.compare("int8_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), CompareFunctor<int8_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<int8_t>(p, m_Order));     
   } else if (typeName.compare("uint8_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), CompareFunctor<uint8_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<uint8_t>(p, m_Order));     
   } else if (typeName.compare("int16_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), CompareFunctor<int16_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<int16_t>(p, m_Order));     
   } else if (typeName.compare("uint16_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), CompareFunctor<uint16_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<uint16_t>(p, m_Order));     
   } else if (typeName.compare("int32_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), CompareFunctor<int32_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<int32_t>(p, m_Order));     
   } else if (typeName.compare("uint32_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), CompareFunctor<uint32_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<uint32_t>(p, m_Order));     
   } else if (typeName.compare("int64_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), CompareFunctor<int64_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<int64_t>(p, m_Order));     
   } else if (typeName.compare("uint64_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), CompareFunctor<uint64_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<uint64_t>(p, m_Order));     
   } else if (typeName.compare("float") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), CompareFunctor<float>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<float>(p, m_Order));     
   } else if (typeName.compare("double") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), CompareFunctor<double>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<double>(p, m_Order));     
   } else if (typeName.compare("bool") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), CompareFunctor<bool>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<bool>(p, m_Order));     
   } else {
     setErrorCondition(-101);
     QString ss = QObject::tr("Data array '%1' is of unsupported type '%2'.").arg(m_ScalarArrayPath.getDataArrayName()).arg(typeName);
