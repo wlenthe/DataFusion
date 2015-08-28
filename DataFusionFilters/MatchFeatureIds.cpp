@@ -98,11 +98,11 @@ MatchFeatureIds::~MatchFeatureIds()
 void MatchFeatureIds::setupFilterParameters()
 {
   FilterParameterVector parameters;
-  DataArraySelectionFilterParameter::DataStructureRequirements req;
+  DataArraySelectionFilterParameter::RequirementType req;
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Feature Ids", "ReferenceFeatureIdsArrayPath", getReferenceFeatureIdsArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Moving Feature Ids", "MovingFeatureIdsArrayPath", getMovingFeatureIdsArrayPath(), FilterParameter::RequiredArray, req));
 
-  AttributeMatrixSelectionFilterParameter::DataStructureRequirements amReq;
+  AttributeMatrixSelectionFilterParameter::RequirementType amReq;
   parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Reference Cell Feature Attribute Matrix", "ReferenceCellFeatureAttributeMatrixPath", getReferenceCellFeatureAttributeMatrixPath(), FilterParameter::RequiredArray, amReq));
   parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Moving Cell Feature Attribute Matrix", "MovingCellFeatureAttributeMatrixPath", getMovingCellFeatureAttributeMatrixPath(), FilterParameter::RequiredArray, amReq));
 

@@ -137,10 +137,10 @@ class FuseVolumesImpl
 // -----------------------------------------------------------------------------
 FuseVolumes::FuseVolumes() :
   AbstractFilter(),
-  m_ReferenceVolume(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, ""),
-  m_MovingVolume(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, ""),
   m_Prefix("fused_"),
   m_TransformationType(0),
+  m_ReferenceVolume(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, ""),
+  m_MovingVolume(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, ""),
   m_TransformationArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DataFusionConstants::Transformation, DataFusionConstants::Transformation)
 {
   std::vector<std::vector <double> > identity(3, std::vector<double>(4, 0));
@@ -164,7 +164,7 @@ FuseVolumes::~FuseVolumes()
 void FuseVolumes::setupFilterParameters()
 {
   FilterParameterVector parameters;
-  AttributeMatrixSelectionFilterParameter::DataStructureRequirements amReq;
+  AttributeMatrixSelectionFilterParameter::RequirementType amReq;
   parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Reference Atrribute Matrix", "ReferenceVolume", getReferenceVolume(), FilterParameter::RequiredArray, amReq));
   parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Moving Atrribute Matrix", "MovingVolume", getMovingVolume(), FilterParameter::RequiredArray, amReq));
   parameters.push_back(StringFilterParameter::New("Merged Array Prefix", "Prefix", getPrefix(), FilterParameter::Parameter));
@@ -184,7 +184,7 @@ void FuseVolumes::setupFilterParameters()
     parameters.push_back(parameter);
   }
 
-  DataArraySelectionFilterParameter::DataStructureRequirements req;
+  DataArraySelectionFilterParameter::RequirementType req;
   parameters.push_back(DataArraySelectionFilterParameter::New("Transformation", "TransformationArrayPath", getTransformationArrayPath(), FilterParameter::RequiredArray, req));
 
   QStringList headers;

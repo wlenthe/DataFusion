@@ -24,7 +24,6 @@
 #include "DREAM3DLib/Common/Constants.h"
 #include "DREAM3DLib/FilterParameters/AbstractFilterParametersReader.h"
 #include "DREAM3DLib/FilterParameters/AbstractFilterParametersWriter.h"
-
 #include "DREAM3DLib/FilterParameters/DataArraySelectionFilterParameter.h"
 #include "DREAM3DLib/FilterParameters/ChoiceFilterParameter.h"
 
@@ -35,10 +34,10 @@
 // -----------------------------------------------------------------------------
 RenumberFeatures::RenumberFeatures() :
   AbstractFilter(),
-  m_FeatureIds(NULL),
   m_FeatureIdsArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellAttributeMatrixName, DREAM3D::CellData::FeatureIds),
   m_ScalarArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellFeatureAttributeMatrixName, ""),
-  m_Order(0)
+  m_Order(0),
+  m_FeatureIds(NULL)
 {
   setupFilterParameters();
 }
@@ -56,7 +55,7 @@ RenumberFeatures::~RenumberFeatures()
 void RenumberFeatures::setupFilterParameters()
 {
   FilterParameterVector parameters;
-  DataArraySelectionFilterParameter::DataStructureRequirements req;
+  DataArraySelectionFilterParameter::RequirementType req;
   parameters.push_back(DataArraySelectionFilterParameter::New("Feature Ids", "FeatureIdsArrayPath", getFeatureIdsArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Scalar Array", "ScalarArrayPath", getScalarArrayPath(), FilterParameter::RequiredArray, req));
 
@@ -138,7 +137,7 @@ void RenumberFeatures::dataCheck()
       }
     }
   }
-  
+
   if(getErrorCondition() < 0) return;
 }
 
@@ -162,7 +161,7 @@ class RenumberFeaturesCompare {
     RenumberFeaturesCompare(IDataArray::Pointer pSort, int order) : m_ascending(1 == order) {m_sortArray = DataArray<T>::SafePointerDownCast(pSort.get())->getPointer(0);}
     bool operator()(const size_t& i, const size_t& j) const {return m_ascending ? m_sortArray[i] < m_sortArray[j] : m_sortArray[i] > m_sortArray[j];}
 
-  private: 
+  private:
     const T* m_sortArray;
     const bool m_ascending;
 };
@@ -190,27 +189,27 @@ void RenumberFeatures::execute()
   //sort map by scalar array
   QString typeName = p->getTypeAsString();
   if (typeName.compare("int8_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<int8_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<int8_t>(p, m_Order));
   } else if (typeName.compare("uint8_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<uint8_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<uint8_t>(p, m_Order));
   } else if (typeName.compare("int16_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<int16_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<int16_t>(p, m_Order));
   } else if (typeName.compare("uint16_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<uint16_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<uint16_t>(p, m_Order));
   } else if (typeName.compare("int32_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<int32_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<int32_t>(p, m_Order));
   } else if (typeName.compare("uint32_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<uint32_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<uint32_t>(p, m_Order));
   } else if (typeName.compare("int64_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<int64_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<int64_t>(p, m_Order));
   } else if (typeName.compare("uint64_t") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<uint64_t>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<uint64_t>(p, m_Order));
   } else if (typeName.compare("float") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<float>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<float>(p, m_Order));
   } else if (typeName.compare("double") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<double>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<double>(p, m_Order));
   } else if (typeName.compare("bool") == 0) {
-    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<bool>(p, m_Order));     
+    std::sort(fromIds.begin() + 1, fromIds.end(), RenumberFeaturesCompare<bool>(p, m_Order));
   } else {
     setErrorCondition(-101);
     QString ss = QObject::tr("Data array '%1' is of unsupported type '%2'.").arg(m_ScalarArrayPath.getDataArrayName()).arg(typeName);

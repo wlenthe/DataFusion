@@ -72,7 +72,7 @@ RegisterOrientations::~RegisterOrientations()
 void RegisterOrientations::setupFilterParameters()
 {
   FilterParameterVector parameters;
-  DataArraySelectionFilterParameter::DataStructureRequirements req;
+  DataArraySelectionFilterParameter::RequirementType req;
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Average Quats", "ReferenceAvgQuatsArrayPath", getReferenceAvgQuatsArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Moving Average Quats", "MovingAvgQuatsArrayPath", getMovingAvgQuatsArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Feature Phases", "ReferencePhasesArrayPath", getReferencePhasesArrayPath(), FilterParameter::RequiredArray, req));

@@ -122,7 +122,7 @@ void RegisterPointSets::setupFilterParameters()
   parameters.push_back(BooleanFilterParameter::New("Allow Shearing", "AllowShearing", getAllowShearing(), FilterParameter::Parameter, "", 1));
 
   //required arrays
-  DataArraySelectionFilterParameter::DataStructureRequirements req;
+  DataArraySelectionFilterParameter::RequirementType req;
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Points", "ReferenceCentroidsArrayPath", getReferenceCentroidsArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Moving Points", "MovingCentroidsArrayPath", getMovingCentroidsArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Good Points", "ReferenceGoodFeaturesArrayPath", getReferenceGoodFeaturesArrayPath(), FilterParameter::RequiredArray, req));
