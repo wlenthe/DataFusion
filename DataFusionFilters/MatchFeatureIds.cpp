@@ -219,16 +219,13 @@ void MatchFeatureIds::dataCheck()
 
   //required arrays
   QVector<size_t> dims(1, 1);
-  QVector<DataArrayPath> referenceDataArrayPaths, movingDataArrayPaths;
   m_ReferenceFeatureIdsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<int32_t>, AbstractFilter>(this, getReferenceFeatureIdsArrayPath(), dims);
   if( NULL != m_ReferenceFeatureIdsPtr.lock().get() )
   { m_ReferenceFeatureIds = m_ReferenceFeatureIdsPtr.lock()->getPointer(0); }
-  if(getErrorCondition() >= 0) { referenceDataArrayPaths.push_back(getReferenceFeatureIdsArrayPath()); }
 
   m_MovingFeatureIdsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<int32_t>, AbstractFilter>(this, getMovingFeatureIdsArrayPath(), dims);
   if( NULL != m_MovingFeatureIdsPtr.lock().get() )
   { m_MovingFeatureIds = m_MovingFeatureIdsPtr.lock()->getPointer(0); }
-  if(getErrorCondition() >= 0) { movingDataArrayPaths.push_back(getMovingFeatureIdsArrayPath()); }
 
   if(getReferenceFeatureIdsArrayPath() == getMovingCellFeatureAttributeMatrixPath())
     notifyErrorMessage(getHumanLabel(), "'Moving Feature Ids' and 'Reference Feature Ids' must be different", -1001);
@@ -236,6 +233,7 @@ void MatchFeatureIds::dataCheck()
   if(getUseOrientations())
   {
     dims[0]=4;
+    QVector<DataArrayPath> referenceDataArrayPaths, movingDataArrayPaths;
     m_ReferenceQuatsPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<float>, AbstractFilter>(this, getReferenceQuatsArrayPath(), dims);
     if( NULL != m_ReferenceQuatsPtr.lock().get() )
     { m_ReferenceQuats = m_ReferenceQuatsPtr.lock()->getPointer(0); }
@@ -264,9 +262,9 @@ void MatchFeatureIds::dataCheck()
     m_MovingCrystalStructuresPtr = getDataContainerArray()->getPrereqArrayFromPath<DataArray<unsigned int>, AbstractFilter>(this, getMovingCrystalStructuresArrayPath(), dims);
     if( NULL != m_MovingCrystalStructuresPtr.lock().get() )
     { m_MovingCrystalStructures = m_MovingCrystalStructuresPtr.lock()->getPointer(0); }
+    getDataContainerArray()->validateNumberOfTuples<AbstractFilter>(this, referenceDataArrayPaths);
+    getDataContainerArray()->validateNumberOfTuples<AbstractFilter>(this, movingDataArrayPaths);
   }
-  getDataContainerArray()->validateNumberOfTuples<AbstractFilter>(this, referenceDataArrayPaths);
-  getDataContainerArray()->validateNumberOfTuples<AbstractFilter>(this, movingDataArrayPaths);
   if(getErrorCondition() < 0) return;
 
   //created arrays
