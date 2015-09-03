@@ -25,15 +25,15 @@
 #include <QtCore/QObject>
 #include <QtCore/QSettings>
 
-#include "DREAM3DLib/Plugin/IDREAM3DPlugin.h"
+#include "SIMPLib/Plugin/ISIMPLibPlugin.h"
 
 /**
  * @brief The DataFusionPlugin class
  */
-class DataFusionPlugin : public QObject, public IDREAM3DPlugin
+class DataFusionPlugin : public QObject, public ISIMPLibPlugin
 {
     Q_OBJECT
-    Q_INTERFACES(IDREAM3DPlugin)
+    Q_INTERFACES(ISIMPLibPlugin)
     Q_PLUGIN_METADATA(IID "com.your.domain.DataFusionPlugin")
 
   public:

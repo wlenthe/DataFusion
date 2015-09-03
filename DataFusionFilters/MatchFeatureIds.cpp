@@ -21,18 +21,18 @@
 
 #include "MatchFeatureIds.h"
 
-#include "DREAM3DLib/Common/Constants.h"
-#include "DREAM3DLib/FilterParameters/AbstractFilterParametersReader.h"
-#include "DREAM3DLib/FilterParameters/AbstractFilterParametersWriter.h"
+#include "SIMPLib/Common/Constants.h"
+#include "SIMPLib/FilterParameters/AbstractFilterParametersReader.h"
+#include "SIMPLib/FilterParameters/AbstractFilterParametersWriter.h"
 
-#include "DREAM3DLib/FilterParameters/DataArraySelectionFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/AttributeMatrixSelectionFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/ChoiceFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/DoubleFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/StringFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/LinkedBooleanFilterParameter.h"
+#include "SIMPLib/FilterParameters/DataArraySelectionFilterParameter.h"
+#include "SIMPLib/FilterParameters/AttributeMatrixSelectionFilterParameter.h"
+#include "SIMPLib/FilterParameters/ChoiceFilterParameter.h"
+#include "SIMPLib/FilterParameters/DoubleFilterParameter.h"
+#include "SIMPLib/FilterParameters/StringFilterParameter.h"
+#include "SIMPLib/FilterParameters/LinkedBooleanFilterParameter.h"
 
-#include "DREAM3DLib/FilterParameters/DataArrayCreationFilterParameter.h"
+#include "SIMPLib/FilterParameters/DataArrayCreationFilterParameter.h"
 
 #include "DataFusion/DataFusionConstants.h"
 namespace Detail
@@ -173,26 +173,26 @@ void MatchFeatureIds::readFilterParameters(AbstractFilterParametersReader* reade
 int MatchFeatureIds::writeFilterParameters(AbstractFilterParametersWriter* writer, int index)
 {
   writer->openFilterGroup(this, index);
-  DREAM3D_FILTER_WRITE_PARAMETER(FilterVersion)
-  DREAM3D_FILTER_WRITE_PARAMETER(ReferenceFeatureIdsArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(MovingFeatureIdsArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(ReferenceCellFeatureAttributeMatrixPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(MovingCellFeatureAttributeMatrixPath)
+  SIMPL_FILTER_WRITE_PARAMETER(FilterVersion)
+  SIMPL_FILTER_WRITE_PARAMETER(ReferenceFeatureIdsArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(MovingFeatureIdsArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(ReferenceCellFeatureAttributeMatrixPath)
+  SIMPL_FILTER_WRITE_PARAMETER(MovingCellFeatureAttributeMatrixPath)
 
-  DREAM3D_FILTER_WRITE_PARAMETER(Metric)
-  DREAM3D_FILTER_WRITE_PARAMETER(MetricThreshold)
-  DREAM3D_FILTER_WRITE_PARAMETER(OverlapArrayName)
-  DREAM3D_FILTER_WRITE_PARAMETER(ReferenceUniqueArrayName)
-  DREAM3D_FILTER_WRITE_PARAMETER(MovingUniqueArrayName)
+  SIMPL_FILTER_WRITE_PARAMETER(Metric)
+  SIMPL_FILTER_WRITE_PARAMETER(MetricThreshold)
+  SIMPL_FILTER_WRITE_PARAMETER(OverlapArrayName)
+  SIMPL_FILTER_WRITE_PARAMETER(ReferenceUniqueArrayName)
+  SIMPL_FILTER_WRITE_PARAMETER(MovingUniqueArrayName)
 
-  DREAM3D_FILTER_WRITE_PARAMETER(UseOrientations)
-  DREAM3D_FILTER_WRITE_PARAMETER(OrientationTolerance)
-  DREAM3D_FILTER_WRITE_PARAMETER(ReferenceQuatsArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(ReferencePhasesArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(ReferenceCrystalStructuresArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(MovingQuatsArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(MovingPhasesArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(MovingCrystalStructuresArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(UseOrientations)
+  SIMPL_FILTER_WRITE_PARAMETER(OrientationTolerance)
+  SIMPL_FILTER_WRITE_PARAMETER(ReferenceQuatsArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(ReferencePhasesArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(ReferenceCrystalStructuresArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(MovingQuatsArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(MovingPhasesArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(MovingCrystalStructuresArrayPath)
   writer->closeFilterGroup();
   return ++index; // we want to return the next index that was just written to
 }
@@ -398,7 +398,7 @@ void MatchFeatureIds::execute()
   idMap[0] = 0;
 
   // begin assigning grains by overlap until (i) all moving grains have been assigned or (ii) overlapping pairs are exhausted
-  float orientationTolerance = m_OrientationTolerance*DREAM3D::Constants::k_Pi/180.0f;
+  float orientationTolerance = m_OrientationTolerance*SIMPLib::Constants::k_Pi/180.0f;
   int assignedGrains = 0;
   while(assignedGrains<maxMovingId && featureOverlaps.size()>0)
   {

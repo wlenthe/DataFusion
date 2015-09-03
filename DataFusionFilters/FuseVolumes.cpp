@@ -21,17 +21,17 @@
 
 #include "FuseVolumes.h"
 
-#include "DREAM3DLib/Common/Constants.h"
-#include "DREAM3DLib/FilterParameters/AbstractFilterParametersReader.h"
-#include "DREAM3DLib/FilterParameters/AbstractFilterParametersWriter.h"
+#include "SIMPLib/Common/Constants.h"
+#include "SIMPLib/FilterParameters/AbstractFilterParametersReader.h"
+#include "SIMPLib/FilterParameters/AbstractFilterParametersWriter.h"
 
-#include "DREAM3DLib/FilterParameters/AttributeMatrixSelectionFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/StringFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/LinkedChoicesFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/DataArraySelectionFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/DynamicTableFilterParameter.h"
+#include "SIMPLib/FilterParameters/AttributeMatrixSelectionFilterParameter.h"
+#include "SIMPLib/FilterParameters/StringFilterParameter.h"
+#include "SIMPLib/FilterParameters/LinkedChoicesFilterParameter.h"
+#include "SIMPLib/FilterParameters/DataArraySelectionFilterParameter.h"
+#include "SIMPLib/FilterParameters/DynamicTableFilterParameter.h"
 
-#ifdef DREAM3D_USE_PARALLEL_ALGORITHMS
+#ifdef SIMPLib_USE_PARALLEL_ALGORITHMS
   #include <tbb/parallel_for.h>
   #include <tbb/blocked_range3d.h>
   #include <tbb/partitioner.h>
@@ -109,7 +109,7 @@ class FuseVolumesImpl
       }
     }
 
-#ifdef DREAM3D_USE_PARALLEL_ALGORITHMS
+#ifdef SIMPLib_USE_PARALLEL_ALGORITHMS
     void operator()(const tbb::blocked_range3d<size_t, size_t, size_t>& r) const
     {
       convert(r.pages().begin(), r.pages().end(), r.rows().begin(), r.rows().end(), r.cols().begin(), r.cols().end());
@@ -216,13 +216,13 @@ void FuseVolumes::readFilterParameters(AbstractFilterParametersReader* reader, i
 int FuseVolumes::writeFilterParameters(AbstractFilterParametersWriter* writer, int index)
 {
   writer->openFilterGroup(this, index);
-  DREAM3D_FILTER_WRITE_PARAMETER(FilterVersion)
-  DREAM3D_FILTER_WRITE_PARAMETER(ReferenceVolume)
-  DREAM3D_FILTER_WRITE_PARAMETER(MovingVolume)
-  DREAM3D_FILTER_WRITE_PARAMETER(Prefix)
-  DREAM3D_FILTER_WRITE_PARAMETER(TransformationType)
-  DREAM3D_FILTER_WRITE_PARAMETER(TransformationArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(ManualTransformation)
+  SIMPL_FILTER_WRITE_PARAMETER(FilterVersion)
+  SIMPL_FILTER_WRITE_PARAMETER(ReferenceVolume)
+  SIMPL_FILTER_WRITE_PARAMETER(MovingVolume)
+  SIMPL_FILTER_WRITE_PARAMETER(Prefix)
+  SIMPL_FILTER_WRITE_PARAMETER(TransformationType)
+  SIMPL_FILTER_WRITE_PARAMETER(TransformationArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(ManualTransformation)
   writer->closeFilterGroup();
   return ++index; // we want to return the next index that was just written to
 }
@@ -429,12 +429,12 @@ void FuseVolumes::execute()
   newIndiciesPtr->initializeWithValue(-1);
   int64_t* newindicies = newIndiciesPtr->getPointer(0);
 
-#ifdef DREAM3D_USE_PARALLEL_ALGORITHMS
+#ifdef SIMPLib_USE_PARALLEL_ALGORITHMS
   tbb::task_scheduler_init init;
   bool doParallel = true;
 #endif
 
-#ifdef DREAM3D_USE_PARALLEL_ALGORITHMS
+#ifdef SIMPLib_USE_PARALLEL_ALGORITHMS
   if (doParallel == true)
   {
     tbb::parallel_for(tbb::blocked_range3d<size_t, size_t, size_t>(0, refDims[2]-1, 0, refDims[1]-1, 0, refDims[0]-1),

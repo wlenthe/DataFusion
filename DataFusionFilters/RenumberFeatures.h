@@ -22,9 +22,9 @@
 #ifndef _RenumberFeatures_H_
 #define _RenumberFeatures_H_
 
-#include "DREAM3DLib/DREAM3DLib.h"
-#include "DREAM3DLib/Common/DREAM3DSetGetMacros.h"
-#include "DREAM3DLib/Common/AbstractFilter.h"
+#include "SIMPLib/SIMPLib.h"
+#include "SIMPLib/Common/SIMPLibSetGetMacros.h"
+#include "SIMPLib/Common/AbstractFilter.h"
 
 /**
  * @brief The RenumberFeatures class. See [Filter documentation](@ref RenumberFeatures) for details.
@@ -34,22 +34,22 @@ class RenumberFeatures : public AbstractFilter
   Q_OBJECT /* Need this for Qt's signals and slots mechanism to work */
 
   public:
-    DREAM3D_SHARED_POINTERS(RenumberFeatures)
-    DREAM3D_STATIC_NEW_MACRO(RenumberFeatures)
-    DREAM3D_TYPE_MACRO_SUPER(RenumberFeatures, AbstractFilter)
+    SIMPL_SHARED_POINTERS(RenumberFeatures)
+    SIMPL_STATIC_NEW_MACRO(RenumberFeatures)
+    SIMPL_TYPE_MACRO_SUPER(RenumberFeatures, AbstractFilter)
 
     virtual ~RenumberFeatures();
 
     //input array paths
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, FeatureIdsArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, FeatureIdsArrayPath)
     Q_PROPERTY(DataArrayPath FeatureIdsArrayPath READ getFeatureIdsArrayPath WRITE setFeatureIdsArrayPath)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, ScalarArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, ScalarArrayPath)
     Q_PROPERTY(DataArrayPath ScalarArrayPath READ getScalarArrayPath WRITE setScalarArrayPath)
 
 
     //user paramters
-    DREAM3D_FILTER_PARAMETER(int, Order)
+    SIMPL_FILTER_PARAMETER(int, Order)
     Q_PROPERTY(int Order READ getOrder WRITE setOrder)
 
     /**

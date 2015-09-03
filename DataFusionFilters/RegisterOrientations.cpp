@@ -21,13 +21,13 @@
 
 #include "RegisterOrientations.h"
 
-#include "DREAM3DLib/Common/Constants.h"
-#include "DREAM3DLib/FilterParameters/AbstractFilterParametersReader.h"
-#include "DREAM3DLib/FilterParameters/AbstractFilterParametersWriter.h"
+#include "SIMPLib/Common/Constants.h"
+#include "SIMPLib/FilterParameters/AbstractFilterParametersReader.h"
+#include "SIMPLib/FilterParameters/AbstractFilterParametersWriter.h"
 
-#include "DREAM3DLib/FilterParameters/DataArraySelectionFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/LinkedBooleanFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/DoubleFilterParameter.h"
+#include "SIMPLib/FilterParameters/DataArraySelectionFilterParameter.h"
+#include "SIMPLib/FilterParameters/LinkedBooleanFilterParameter.h"
+#include "SIMPLib/FilterParameters/DoubleFilterParameter.h"
 
 #include "DataFusion/DataFusionConstants.h"
 
@@ -115,17 +115,17 @@ void RegisterOrientations::readFilterParameters(AbstractFilterParametersReader* 
 int RegisterOrientations::writeFilterParameters(AbstractFilterParametersWriter* writer, int index)
 {
   writer->openFilterGroup(this, index);
-  DREAM3D_FILTER_WRITE_PARAMETER(FilterVersion)
-  DREAM3D_FILTER_WRITE_PARAMETER(ReferenceAvgQuatsArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(MovingAvgQuatsArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(UseGoodFeatures)
-  DREAM3D_FILTER_WRITE_PARAMETER(ReferenceGoodFeaturesArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(MovingGoodFeaturesArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(ReferencePhasesArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(MovingPhasesArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(ReferenceCrystalStructuresArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(MovingCrystalStructuresArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(MinMiso)
+  SIMPL_FILTER_WRITE_PARAMETER(FilterVersion)
+  SIMPL_FILTER_WRITE_PARAMETER(ReferenceAvgQuatsArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(MovingAvgQuatsArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(UseGoodFeatures)
+  SIMPL_FILTER_WRITE_PARAMETER(ReferenceGoodFeaturesArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(MovingGoodFeaturesArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(ReferencePhasesArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(MovingPhasesArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(ReferenceCrystalStructuresArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(MovingCrystalStructuresArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(MinMiso)
   writer->closeFilterGroup();
   return ++index; // we want to return the next index that was just written to
 }

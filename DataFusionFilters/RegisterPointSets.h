@@ -22,9 +22,9 @@
 #ifndef _RegisterPointSets_H_
 #define _RegisterPointSets_H_
 
-#include "DREAM3DLib/DREAM3DLib.h"
-#include "DREAM3DLib/Common/DREAM3DSetGetMacros.h"
-#include "DREAM3DLib/Common/AbstractFilter.h"
+#include "SIMPLib/SIMPLib.h"
+#include "SIMPLib/Common/SIMPLibSetGetMacros.h"
+#include "SIMPLib/Common/AbstractFilter.h"
 
 /**
  * @brief The RegisterPointSets class. See [Filter documentation](@ref registerpointsets) for details.
@@ -34,55 +34,55 @@ class RegisterPointSets : public AbstractFilter
   Q_OBJECT /* Need this for Qt's signals and slots mechanism to work */
 
   public:
-    DREAM3D_SHARED_POINTERS(RegisterPointSets)
-    DREAM3D_STATIC_NEW_MACRO(RegisterPointSets)
-    DREAM3D_TYPE_MACRO_SUPER(RegisterPointSets, AbstractFilter)
+    SIMPL_SHARED_POINTERS(RegisterPointSets)
+    SIMPL_STATIC_NEW_MACRO(RegisterPointSets)
+    SIMPL_TYPE_MACRO_SUPER(RegisterPointSets, AbstractFilter)
 
     virtual ~RegisterPointSets();
 
     //input array paths
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceCentroidsArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, ReferenceCentroidsArrayPath)
     Q_PROPERTY(DataArrayPath ReferenceCentroidsArrayPath READ getReferenceCentroidsArrayPath WRITE setReferenceCentroidsArrayPath)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingCentroidsArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, MovingCentroidsArrayPath)
     Q_PROPERTY(DataArrayPath MovingCentroidsArrayPath READ getMovingCentroidsArrayPath WRITE setMovingCentroidsArrayPath)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceGoodFeaturesArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, ReferenceGoodFeaturesArrayPath)
     Q_PROPERTY(DataArrayPath ReferenceGoodFeaturesArrayPath READ getReferenceGoodFeaturesArrayPath WRITE setReferenceGoodFeaturesArrayPath)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingGoodFeaturesArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, MovingGoodFeaturesArrayPath)
     Q_PROPERTY(DataArrayPath MovingGoodFeaturesArrayPath READ getMovingGoodFeaturesArrayPath WRITE setMovingGoodFeaturesArrayPath)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, WeightsArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, WeightsArrayPath)
     Q_PROPERTY(DataArrayPath WeightsArrayPath READ getWeightsArrayPath WRITE setWeightsArrayPath)
 
-    DREAM3D_FILTER_PARAMETER(QString, AttributeMatrixName)
+    SIMPL_FILTER_PARAMETER(QString, AttributeMatrixName)
     Q_PROPERTY(QString AttributeMatrixName READ getAttributeMatrixName WRITE setAttributeMatrixName)
 
     //parameters
-    DREAM3D_INSTANCE_PROPERTY(bool, AllowTranslation)
+    SIMPL_INSTANCE_PROPERTY(bool, AllowTranslation)
     Q_PROPERTY(bool AllowTranslation READ getAllowTranslation WRITE setAllowTranslation)
 
-    DREAM3D_INSTANCE_PROPERTY(bool, AllowRotation)
+    SIMPL_INSTANCE_PROPERTY(bool, AllowRotation)
     Q_PROPERTY(bool AllowRotation READ getAllowRotation WRITE setAllowRotation)
 
-    DREAM3D_INSTANCE_PROPERTY(bool, AllowScaling)
+    SIMPL_INSTANCE_PROPERTY(bool, AllowScaling)
     Q_PROPERTY(bool AllowScaling READ getAllowScaling WRITE setAllowScaling)
 
-    DREAM3D_INSTANCE_PROPERTY(int, ScalingType)
+    SIMPL_INSTANCE_PROPERTY(int, ScalingType)
     Q_PROPERTY(int ScalingType READ getScalingType WRITE setScalingType)
 
-    DREAM3D_INSTANCE_PROPERTY(bool, AllowShearing)
+    SIMPL_INSTANCE_PROPERTY(bool, AllowShearing)
     Q_PROPERTY(bool AllowShearing READ getAllowShearing WRITE setAllowShearing)
 
-    DREAM3D_INSTANCE_PROPERTY(bool, UseGoodPoints)
+    SIMPL_INSTANCE_PROPERTY(bool, UseGoodPoints)
     Q_PROPERTY(bool UseGoodPoints READ getUseGoodPoints WRITE setUseGoodPoints)
     
-    DREAM3D_INSTANCE_PROPERTY(bool, UseWeights)
+    SIMPL_INSTANCE_PROPERTY(bool, UseWeights)
     Q_PROPERTY(bool UseWeights READ getUseWeights WRITE setUseWeights)
 
     //created arrays
-    DREAM3D_FILTER_PARAMETER(QString, TransformName)
+    SIMPL_FILTER_PARAMETER(QString, TransformName)
     Q_PROPERTY(QString TransformName READ getTransformName WRITE setTransformName)
 
 

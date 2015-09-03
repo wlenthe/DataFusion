@@ -22,11 +22,11 @@
 #ifndef _FuseVolumes_H_
 #define _FuseVolumes_H_
 
-#include "DREAM3DLib/DREAM3DLib.h"
-#include "DREAM3DLib/Common/DREAM3DSetGetMacros.h"
-#include "DREAM3DLib/Common/AbstractFilter.h"
+#include "SIMPLib/SIMPLib.h"
+#include "SIMPLib/Common/SIMPLibSetGetMacros.h"
+#include "SIMPLib/Common/AbstractFilter.h"
 
-#include "DREAM3DLib/FilterParameters/DynamicTableData.h"
+#include "SIMPLib/FilterParameters/DynamicTableData.h"
 
 /**
  * @brief The FuseVolumes class. See [Filter documentation](@ref fusevolumes) for details.
@@ -36,30 +36,30 @@ class FuseVolumes : public AbstractFilter
   Q_OBJECT /* Need this for Qt's signals and slots mechanism to work */
 
   public:
-    DREAM3D_SHARED_POINTERS(FuseVolumes)
-    DREAM3D_STATIC_NEW_MACRO(FuseVolumes)
-    DREAM3D_TYPE_MACRO_SUPER(FuseVolumes, AbstractFilter)
+    SIMPL_SHARED_POINTERS(FuseVolumes)
+    SIMPL_STATIC_NEW_MACRO(FuseVolumes)
+    SIMPL_TYPE_MACRO_SUPER(FuseVolumes, AbstractFilter)
 
     virtual ~FuseVolumes();
 
     //user paramters
-    DREAM3D_FILTER_PARAMETER(QString, Prefix)
+    SIMPL_FILTER_PARAMETER(QString, Prefix)
     Q_PROPERTY(QString Prefix READ getPrefix WRITE setPrefix)
 
-    DREAM3D_FILTER_PARAMETER(int, TransformationType)
+    SIMPL_FILTER_PARAMETER(int, TransformationType)
     Q_PROPERTY(int TransformationType READ getTransformationType WRITE setTransformationType)
 
-    DREAM3D_FILTER_PARAMETER(DynamicTableData, ManualTransformation)
+    SIMPL_FILTER_PARAMETER(DynamicTableData, ManualTransformation)
     Q_PROPERTY(DynamicTableData ManualTransformation READ getManualTransformation WRITE setManualTransformation)
 
     //input array paths
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceVolume)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, ReferenceVolume)
     Q_PROPERTY(DataArrayPath ReferenceVolume READ getReferenceVolume WRITE setReferenceVolume)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingVolume)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, MovingVolume)
     Q_PROPERTY(DataArrayPath MovingVolume READ getMovingVolume WRITE setMovingVolume)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, TransformationArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, TransformationArrayPath)
     Q_PROPERTY(DataArrayPath TransformationArrayPath READ getTransformationArrayPath WRITE setTransformationArrayPath)
 
 

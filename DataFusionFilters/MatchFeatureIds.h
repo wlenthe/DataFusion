@@ -22,9 +22,9 @@
 #ifndef _MatchFeatureIds_H_
 #define _MatchFeatureIds_H_
 
-#include "DREAM3DLib/DREAM3DLib.h"
-#include "DREAM3DLib/Common/DREAM3DSetGetMacros.h"
-#include "DREAM3DLib/Common/AbstractFilter.h"
+#include "SIMPLib/SIMPLib.h"
+#include "SIMPLib/Common/SIMPLibSetGetMacros.h"
+#include "SIMPLib/Common/AbstractFilter.h"
 
 #include "OrientationLib/SpaceGroupOps/SpaceGroupOps.h"
 
@@ -36,65 +36,65 @@ class MatchFeatureIds : public AbstractFilter
   Q_OBJECT /* Need this for Qt's signals and slots mechanism to work */
 
   public:
-    DREAM3D_SHARED_POINTERS(MatchFeatureIds)
-    DREAM3D_STATIC_NEW_MACRO(MatchFeatureIds)
-    DREAM3D_TYPE_MACRO_SUPER(MatchFeatureIds, AbstractFilter)
+    SIMPL_SHARED_POINTERS(MatchFeatureIds)
+    SIMPL_STATIC_NEW_MACRO(MatchFeatureIds)
+    SIMPL_TYPE_MACRO_SUPER(MatchFeatureIds, AbstractFilter)
 
     virtual ~MatchFeatureIds();
 
     //input array paths
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceCellFeatureAttributeMatrixPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, ReferenceCellFeatureAttributeMatrixPath)
     Q_PROPERTY(DataArrayPath ReferenceCellFeatureAttributeMatrixPath READ getReferenceCellFeatureAttributeMatrixPath WRITE setReferenceCellFeatureAttributeMatrixPath)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingCellFeatureAttributeMatrixPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, MovingCellFeatureAttributeMatrixPath)
     Q_PROPERTY(DataArrayPath MovingCellFeatureAttributeMatrixPath READ getMovingCellFeatureAttributeMatrixPath WRITE setMovingCellFeatureAttributeMatrixPath)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceFeatureIdsArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, ReferenceFeatureIdsArrayPath)
     Q_PROPERTY(DataArrayPath ReferenceFeatureIdsArrayPath READ getReferenceFeatureIdsArrayPath WRITE setReferenceFeatureIdsArrayPath)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingFeatureIdsArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, MovingFeatureIdsArrayPath)
     Q_PROPERTY(DataArrayPath MovingFeatureIdsArrayPath READ getMovingFeatureIdsArrayPath WRITE setMovingFeatureIdsArrayPath)
 
     //orientation matching
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceQuatsArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, ReferenceQuatsArrayPath)
     Q_PROPERTY(DataArrayPath ReferenceQuatsArrayPath READ getReferenceQuatsArrayPath WRITE setReferenceQuatsArrayPath)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingQuatsArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, MovingQuatsArrayPath)
     Q_PROPERTY(DataArrayPath MovingQuatsArrayPath READ getMovingQuatsArrayPath WRITE setMovingQuatsArrayPath)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferencePhasesArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, ReferencePhasesArrayPath)
     Q_PROPERTY(DataArrayPath ReferencePhasesArrayPath READ getReferencePhasesArrayPath WRITE setReferencePhasesArrayPath)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingPhasesArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, MovingPhasesArrayPath)
     Q_PROPERTY(DataArrayPath MovingPhasesArrayPath READ getMovingPhasesArrayPath WRITE setMovingPhasesArrayPath)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, ReferenceCrystalStructuresArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, ReferenceCrystalStructuresArrayPath)
     Q_PROPERTY(DataArrayPath ReferenceCrystalStructuresArrayPath READ getReferenceCrystalStructuresArrayPath WRITE setReferenceCrystalStructuresArrayPath)
 
-    DREAM3D_FILTER_PARAMETER(DataArrayPath, MovingCrystalStructuresArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, MovingCrystalStructuresArrayPath)
     Q_PROPERTY(DataArrayPath MovingCrystalStructuresArrayPath READ getMovingCrystalStructuresArrayPath WRITE setMovingCrystalStructuresArrayPath)
 
     //output array names
-    DREAM3D_FILTER_PARAMETER(QString, OverlapArrayName)
+    SIMPL_FILTER_PARAMETER(QString, OverlapArrayName)
     Q_PROPERTY(QString OverlapArrayName READ getOverlapArrayName WRITE setOverlapArrayName)
 
-    DREAM3D_FILTER_PARAMETER(QString, ReferenceUniqueArrayName)
+    SIMPL_FILTER_PARAMETER(QString, ReferenceUniqueArrayName)
     Q_PROPERTY(QString ReferenceUniqueArrayName READ getReferenceUniqueArrayName WRITE setReferenceUniqueArrayName)
 
-    DREAM3D_FILTER_PARAMETER(QString, MovingUniqueArrayName)
+    SIMPL_FILTER_PARAMETER(QString, MovingUniqueArrayName)
     Q_PROPERTY(QString MovingUniqueArrayName READ getMovingUniqueArrayName WRITE setMovingUniqueArrayName)
 
     //user paramters
-    DREAM3D_FILTER_PARAMETER(int, Metric)
+    SIMPL_FILTER_PARAMETER(int, Metric)
     Q_PROPERTY(int Metric READ getMetric WRITE setMetric)
 
-    DREAM3D_FILTER_PARAMETER(double, MetricThreshold)
+    SIMPL_FILTER_PARAMETER(double, MetricThreshold)
     Q_PROPERTY(double MetricThreshold READ getMetricThreshold WRITE setMetricThreshold)
 
-    DREAM3D_FILTER_PARAMETER(bool, UseOrientations)
+    SIMPL_FILTER_PARAMETER(bool, UseOrientations)
     Q_PROPERTY(bool UseOrientations READ getUseOrientations WRITE setUseOrientations)
 
-    DREAM3D_FILTER_PARAMETER(double, OrientationTolerance)
+    SIMPL_FILTER_PARAMETER(double, OrientationTolerance)
     Q_PROPERTY(double OrientationTolerance READ getOrientationTolerance WRITE setOrientationTolerance)
 
 

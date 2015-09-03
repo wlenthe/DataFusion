@@ -21,16 +21,16 @@
 
 #include "RegisterPointSets.h"
 
-#include "DREAM3DLib/Common/Constants.h"
-#include "DREAM3DLib/FilterParameters/AbstractFilterParametersReader.h"
-#include "DREAM3DLib/FilterParameters/AbstractFilterParametersWriter.h"
+#include "SIMPLib/Common/Constants.h"
+#include "SIMPLib/FilterParameters/AbstractFilterParametersReader.h"
+#include "SIMPLib/FilterParameters/AbstractFilterParametersWriter.h"
 
-#include "DREAM3DLib/FilterParameters/BooleanFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/LinkedBooleanFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/LinkedChoicesFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/DataArraySelectionFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/StringFilterParameter.h"
-#include "DREAM3DLib/FilterParameters/DataContainerSelectionFilterParameter.h"
+#include "SIMPLib/FilterParameters/BooleanFilterParameter.h"
+#include "SIMPLib/FilterParameters/LinkedBooleanFilterParameter.h"
+#include "SIMPLib/FilterParameters/LinkedChoicesFilterParameter.h"
+#include "SIMPLib/FilterParameters/DataArraySelectionFilterParameter.h"
+#include "SIMPLib/FilterParameters/StringFilterParameter.h"
+#include "SIMPLib/FilterParameters/DataContainerSelectionFilterParameter.h"
 
 #include "DataFusion/DataFusionConstants.h"
 
@@ -165,21 +165,21 @@ void RegisterPointSets::readFilterParameters(AbstractFilterParametersReader* rea
 int RegisterPointSets::writeFilterParameters(AbstractFilterParametersWriter* writer, int index)
 {
   writer->openFilterGroup(this, index);
-  DREAM3D_FILTER_WRITE_PARAMETER(FilterVersion)
-  DREAM3D_FILTER_WRITE_PARAMETER(AllowTranslation)
-  DREAM3D_FILTER_WRITE_PARAMETER(AllowRotation)
-  DREAM3D_FILTER_WRITE_PARAMETER(AllowScaling)
-  DREAM3D_FILTER_WRITE_PARAMETER(ScalingType)
-  DREAM3D_FILTER_WRITE_PARAMETER(AllowShearing)
-  DREAM3D_FILTER_WRITE_PARAMETER(ReferenceCentroidsArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(MovingCentroidsArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(UseGoodPoints)
-  DREAM3D_FILTER_WRITE_PARAMETER(ReferenceGoodFeaturesArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(MovingGoodFeaturesArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(UseWeights)
-  DREAM3D_FILTER_WRITE_PARAMETER(WeightsArrayPath)
-  DREAM3D_FILTER_WRITE_PARAMETER(AttributeMatrixName)
-  DREAM3D_FILTER_WRITE_PARAMETER(TransformName)
+  SIMPL_FILTER_WRITE_PARAMETER(FilterVersion)
+  SIMPL_FILTER_WRITE_PARAMETER(AllowTranslation)
+  SIMPL_FILTER_WRITE_PARAMETER(AllowRotation)
+  SIMPL_FILTER_WRITE_PARAMETER(AllowScaling)
+  SIMPL_FILTER_WRITE_PARAMETER(ScalingType)
+  SIMPL_FILTER_WRITE_PARAMETER(AllowShearing)
+  SIMPL_FILTER_WRITE_PARAMETER(ReferenceCentroidsArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(MovingCentroidsArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(UseGoodPoints)
+  SIMPL_FILTER_WRITE_PARAMETER(ReferenceGoodFeaturesArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(MovingGoodFeaturesArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(UseWeights)
+  SIMPL_FILTER_WRITE_PARAMETER(WeightsArrayPath)
+  SIMPL_FILTER_WRITE_PARAMETER(AttributeMatrixName)
+  SIMPL_FILTER_WRITE_PARAMETER(TransformName)
   writer->closeFilterGroup();
   return ++index; // we want to return the next index that was just written to
 }

@@ -24,9 +24,9 @@
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 
-#include "DREAM3DLib/Common/FilterManager.h"
-#include "DREAM3DLib/Common/IFilterFactory.hpp"
-#include "DREAM3DLib/Common/FilterFactory.hpp"
+#include "SIMPLib/Common/FilterManager.h"
+#include "SIMPLib/Common/IFilterFactory.hpp"
+#include "SIMPLib/Common/FilterFactory.hpp"
 
 #include "DataFusion/DataFusionConstants.h"
 #include "DataFusion/moc_DataFusionPlugin.cpp"
