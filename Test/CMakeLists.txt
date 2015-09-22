@@ -38,5 +38,5 @@ set(${PROJECT_NAME}_Link_Libs Qt5::Core H5Support SIMPLib)
 
 AddDREAM3DUnitTest(TESTNAME RegisterPointSetsTest SOURCES ${${PROJECT_NAME}_SOURCE_DIR}/RegisterPointSetsTest.cpp LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs})
 AddDREAM3DUnitTest(TESTNAME MatchFeatureIdsTest SOURCES ${${PROJECT_NAME}_SOURCE_DIR}/MatchFeatureIdsTest.cpp LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs})
-AddDREAM3DUnitTest(TESTNAME RegisterOrientationsTest SOURCES ${${PROJECT_NAME}_SOURCE_DIR}/RegisterOrientationsTest.cpp LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs})
+AddDREAM3DUnitTest(TESTNAME RegisterOrientationsTest SOURCES ${${PROJECT_NAME}_SOURCE_DIR}/RegisterOrientationsTest.cpp LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs} OrientationLib)
 AddDREAM3DUnitTest(TESTNAME FuseVolumesTest SOURCES ${${PROJECT_NAME}_SOURCE_DIR}/FuseVolumesTest.cpp LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs})

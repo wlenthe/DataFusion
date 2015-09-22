@@ -116,11 +116,11 @@ int RegisterPointSetsTest()
   am->addAttributeArray(pReferencePoints->getName(), pReferencePoints);
   am->addAttributeArray(pRotatedPoints->getName(), pRotatedPoints);
   am->addAttributeArray(pShearedPoints->getName(), pShearedPoints);
+  
   DataContainer::Pointer dc = DataContainer::New(DREAM3D::Defaults::DataContainerName);
-  ImageGeom::Pointer image = ImageGeom::CreateGeometry(DREAM3D::Geometry::ImageGeometry);
-  // image->setDimensions(dims);
-  dc->setGeometry(image);
+  dc->setGeometry(ImageGeom::CreateGeometry(DREAM3D::Geometry::ImageGeometry));
   dc->addAttributeMatrix(am->getName(), am);
+  
   DataContainerArray::Pointer dca = DataContainerArray::New();
   dca->addDataContainer(dc);
 
