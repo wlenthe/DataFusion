@@ -40,3 +40,4 @@ AddDREAM3DUnitTest(TESTNAME RegisterPointSetsTest SOURCES ${${PROJECT_NAME}_SOUR
 AddDREAM3DUnitTest(TESTNAME MatchFeatureIdsTest SOURCES ${${PROJECT_NAME}_SOURCE_DIR}/MatchFeatureIdsTest.cpp LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs})
 AddDREAM3DUnitTest(TESTNAME RegisterOrientationsTest SOURCES ${${PROJECT_NAME}_SOURCE_DIR}/RegisterOrientationsTest.cpp LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs} OrientationLib)
 AddDREAM3DUnitTest(TESTNAME FuseVolumesTest SOURCES ${${PROJECT_NAME}_SOURCE_DIR}/FuseVolumesTest.cpp LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs})
+AddDREAM3DUnitTest(TESTNAME RenumberFeaturesTest SOURCES ${${PROJECT_NAME}_SOURCE_DIR}/RenumberFeaturesTest.cpp LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs})
