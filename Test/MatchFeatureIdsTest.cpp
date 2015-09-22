@@ -82,7 +82,7 @@ int MatchFeatureIdsTest()
   AttributeMatrix::Pointer cellAm = AttributeMatrix::New(tDims, DREAM3D::Defaults::CellAttributeMatrixName, DREAM3D::AttributeMatrixType::Cell);
   DataArray<int32_t>::Pointer referenceIds = DataArray<int32_t>::CreateArray(tDims, cDims, "ReferenceFeatureIds");
   DataArray<int32_t>::Pointer movingIds = DataArray<int32_t>::CreateArray(tDims, cDims, "MovingFeatureIds");
-  for (size_t i = 0; i < tDims[0]; i++) {
+  for(size_t i = 0; i < tDims[0]; i++) {
     referenceIds->setValue(i, refID[i]);
     movingIds->setValue(i, movID[i]);
   }
@@ -95,7 +95,7 @@ int MatchFeatureIdsTest()
   AttributeMatrix::Pointer movCellFeatAm = AttributeMatrix::New(tDims, "MovingCellFeatureData", DREAM3D::AttributeMatrixType::CellFeature);
   DataArray<int32_t>::Pointer referenceNumCells = DataArray<int32_t>::CreateArray(tDims, cDims, "ReferenceNumCells");
   DataArray<int32_t>::Pointer movingNumCells = DataArray<int32_t>::CreateArray(tDims, cDims, "MovingNumCells");
-  for (size_t i = 0; i < tDims[0]; i++) {
+  for(size_t i = 0; i < tDims[0]; i++) {
     referenceNumCells->setValue(i, refSize[i]);
     movingNumCells->setValue(i, movSize[i]);
   }
@@ -117,7 +117,7 @@ int MatchFeatureIdsTest()
   QString filtName = "MatchFeatureIds";
   FilterManager* fm = FilterManager::Instance();
   IFilterFactory::Pointer filterFactory = fm->getFactoryForFilter(filtName);
-  if (NULL != filterFactory.get())
+  if(NULL != filterFactory.get())
   {
     //create filter and set parameters
     AbstractFilter::Pointer filter = filterFactory->create();
@@ -172,19 +172,22 @@ int MatchFeatureIdsTest()
     int32_t* registeredIds = pRegisteredIds->getPointer(0);
     int32_t* registeredNumCells = pRegisteredNumCells->getPointer(0);
 
+    DREAM3D_REQUIRE_VALID_POINTER(registeredIds)
+    DREAM3D_REQUIRE_VALID_POINTER(registeredNumCells)
+
     DREAM3D_REQUIRE_EQUAL(tDims[0] + 1, pRegisteredNumCells->getNumberOfTuples())
 
-    for (size_t i = 0; i < dims[0]; i++) {
+    for(size_t i = 0; i < dims[0]; i++) {
       DREAM3D_REQUIRE_EQUAL(registeredIds[i], regID[i])
     }
-    for (size_t i = 0; i < pRegisteredNumCells->getNumberOfTuples(); i++) {
+    for(size_t i = 0; i < pRegisteredNumCells->getNumberOfTuples(); i++) {
       DREAM3D_REQUIRE_EQUAL(registeredNumCells[i], regSize[i])
     }
   } 
   else
   {
     QString ss = QObject::tr("MatchFeatureIdsTest Error creating filter '%1'. Filter was not created/executed. Please notify the developers.").arg(filtName);
-    DREAM3D_REQUIRE_EQUAL(0, 1)
+    DREAM3D_TEST_THROW_EXCEPTION(ss.toStdString())
   }
 
   return EXIT_SUCCESS;
