@@ -33,18 +33,6 @@
 
 #include "DataFusionTestFileLocations.h"
 
-#include <Eigen/Dense>
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void RemoveTestFiles()
-{
-#if REMOVE_TEST_FILES
-  //no test files
-#endif
-}
-
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
@@ -256,7 +244,6 @@ void loadFilterPlugins()
   QMetaObjectUtilities::RegisterMetaTypes();
 }
 
-
 // -----------------------------------------------------------------------------
 //  Use test framework
 // -----------------------------------------------------------------------------
@@ -274,7 +261,6 @@ int main(int argc, char** argv)
 
   DREAM3D_REGISTER_TEST( RegisterPointSetsTest() )
 
-  DREAM3D_REGISTER_TEST( RemoveTestFiles() )
   PRINT_TEST_SUMMARY();
   return err;
 }

@@ -36,16 +36,6 @@
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void RemoveTestFiles()
-{
-#if REMOVE_TEST_FILES
-  //no test files
-#endif
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
 int TestFilterAvailability()
 {
 	QString filtName = "MatchFeatureIds";
@@ -206,7 +196,6 @@ void loadFilterPlugins()
   QMetaObjectUtilities::RegisterMetaTypes();
 }
 
-
 // -----------------------------------------------------------------------------
 //  Use test framework
 // -----------------------------------------------------------------------------
@@ -224,7 +213,6 @@ int main(int argc, char** argv)
 
   DREAM3D_REGISTER_TEST( MatchFeatureIdsTest() )
 
-  DREAM3D_REGISTER_TEST( RemoveTestFiles() )
   PRINT_TEST_SUMMARY();
   return err;
 }
