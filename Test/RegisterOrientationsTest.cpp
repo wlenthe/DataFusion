@@ -215,11 +215,10 @@ int RegisterOrientationsTest()
 
     //compare registered quats
     for(size_t i = 0; i < numPoints; i++) {
-      DREAM3D_REQUIRE_EQUAL(0, 1)
-      // DREAM3D_COMPARE_FLOATS(&referenceOrientations[i].x, &registeredOrientations[i].x, 10)
-      // DREAM3D_COMPARE_FLOATS(&referenceOrientations[i].y, &registeredOrientations[i].y, 10)
-      // DREAM3D_COMPARE_FLOATS(&referenceOrientations[i].z, &registeredOrientations[i].z, 10)
-      // DREAM3D_COMPARE_FLOATS(&referenceOrientations[i].w, &registeredOrientations[i].w, 10)
+      DREAM3D_COMPARE_FLOATS(referenceOrientations[i].x, registeredOrientations[i].x, 10)
+      DREAM3D_COMPARE_FLOATS(referenceOrientations[i].y, registeredOrientations[i].y, 10)
+      DREAM3D_COMPARE_FLOATS(referenceOrientations[i].z, registeredOrientations[i].z, 10)
+      DREAM3D_COMPARE_FLOATS(referenceOrientations[i].w, registeredOrientations[i].w, 10)
     }
   }
   else

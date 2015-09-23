@@ -223,17 +223,15 @@ int RegisterPointSetsTest()
 
     //compare row at a time
     for(size_t i = 0; i < 3; i++) {
-      DREAM3D_REQUIRE_EQUAL(0, 1)
-      // DREAM3D_COMPARE_FLOATS(&rotation[3 * i + 0], &rotTransform[4 * i + 0], 0xFFFFFFFF)
-      // DREAM3D_COMPARE_FLOATS(&rotation[3 * i + 0], &rotTransform[4 * i + 0], 1000000000000)
-      // DREAM3D_COMPARE_FLOATS(&rotation[3 * i + 1], &rotTransform[4 * i + 1], 100)
-      // DREAM3D_COMPARE_FLOATS(rotation[3 * i + 2], rotTransform[4 * i + 2], 10)
-      // DREAM3D_COMPARE_FLOATS(translation[i], rotTransform[4 * i + 3], 10)
+      DREAM3D_COMPARE_FLOATS(rotation[3 * i + 0], rotTransform[4 * i + 0], 10)
+      DREAM3D_COMPARE_FLOATS(rotation[3 * i + 1], rotTransform[4 * i + 1], 10)
+      DREAM3D_COMPARE_FLOATS(rotation[3 * i + 2], rotTransform[4 * i + 2], 10)
+      DREAM3D_COMPARE_FLOATS(translation[i], rotTransform[4 * i + 3], 10)
 
-      // DREAM3D_COMPARE_FLOATS(shearing[3 * i + 0], shrTransform[4 * i + 0], 10)
-      // DREAM3D_COMPARE_FLOATS(shearing[3 * i + 1], shrTransform[4 * i + 1], 10)
-      // DREAM3D_COMPARE_FLOATS(shearing[3 * i + 2], shrTransform[4 * i + 2], 10)
-      // DREAM3D_COMPARE_FLOATS(translation[i], shrTransform[4 * i + 3], 10)
+      DREAM3D_COMPARE_FLOATS(shearing[3 * i + 0], shrTransform[4 * i + 0], 10)
+      DREAM3D_COMPARE_FLOATS(shearing[3 * i + 1], shrTransform[4 * i + 1], 10)
+      DREAM3D_COMPARE_FLOATS(shearing[3 * i + 2], shrTransform[4 * i + 2], 10)
+      DREAM3D_COMPARE_FLOATS(translation[i], shrTransform[4 * i + 3], 10)
     }
   }
   else
