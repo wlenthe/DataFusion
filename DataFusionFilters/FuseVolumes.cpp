@@ -394,6 +394,15 @@ void FuseVolumes::execute()
   float movingRes[3] = {0.0f, 0.0f, 0.0f};
   movGeom->getResolution(movingRes);
 
+  //we want voxel centers instead of voxel
+  refOrigin[0] += refRes[0] / 2.0f;
+  refOrigin[1] += refRes[1] / 2.0f;
+  refOrigin[2] += refRes[2] / 2.0f;
+  
+  movingOrigin[0] += movingRes[0] / 2.0f;
+  movingOrigin[1] += movingRes[1] / 2.0f;
+  movingOrigin[2] += movingRes[2] / 2.0f;
+
   //get attribute matricies
   AttributeMatrix::Pointer refCellAttrMat = mReference->getAttributeMatrix(getReferenceVolume().getAttributeMatrixName());
   AttributeMatrix::Pointer moveCellAttrMat = mMoving->getAttributeMatrix(getMovingVolume().getAttributeMatrixName());
