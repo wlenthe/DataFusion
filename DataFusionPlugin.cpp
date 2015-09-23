@@ -223,6 +223,27 @@ void DataFusionPlugin::readSettings(QSettings& prefs)
 {
 }
 
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+const QString DataFusionPlugin::getCitations()
+{
+  return "\
+@article{Lenthe:nb5145,\n\
+  author = {Lenthe, William C. and Echlin, McLean P. and Trenkle, Andreas and Syha, Melanie and Gumbsch, Peter and Pollock, Tresa M.},\n\
+  title = {Quantitative voxel-to-voxel comparison of TriBeam and DCT strontium titanate three-dimensional data sets},\n\
+  journal = {Journal of Applied Crystallography},\n\
+  year = {2015},\n\
+  volume = {48},\n\
+  number = {4},\n\
+  pages = {1034--1046},\n\
+  month = {Aug},\n\
+  doi = {10.1107/S1600576715009231},\n\
+  url = {http://dx.doi.org/10.1107/S1600576715009231},\n\
+  keywords = {diffraction contrast tomography, strontium titanate, electron backscatter diffraction, TriBeam, femtosecond lasers},\n\
+}\n";
+}
+
 #include "DataFusionFilters/RegisterKnownFilters.cpp"
 
 #include "FilterParameterWidgets/RegisterKnownFilterParameterWidgets.cpp"
