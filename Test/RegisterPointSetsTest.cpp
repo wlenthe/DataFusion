@@ -57,7 +57,7 @@ int TestFilterAvailability()
 int RegisterPointSetsTest()
 {
   //create input points: (2n + 1)^3 grid of points with spacing 1, centered at (0, 0, 0)
-  static const int n = 2;
+  static const int n = 4;
   static const int numPoints = (2 * n + 1) * (2 * n + 1) * (2 * n + 1);
   QVector<size_t> tDims(1, numPoints);
   QVector<size_t> cDims(1, 3);
@@ -211,15 +211,15 @@ int RegisterPointSetsTest()
 
     //compare row at a time
     for(size_t i = 0; i < 3; i++) {
-      DREAM3D_COMPARE_FLOATS(rotation[3 * i + 0], rotTransform[4 * i + 0], 10)
-      DREAM3D_COMPARE_FLOATS(rotation[3 * i + 1], rotTransform[4 * i + 1], 10)
-      DREAM3D_COMPARE_FLOATS(rotation[3 * i + 2], rotTransform[4 * i + 2], 10)
-      DREAM3D_COMPARE_FLOATS(translation[i], rotTransform[4 * i + 3], 10)
+      DREAM3D_COMPARE_FLOATS(rotation[3 * i + 0], rotTransform[4 * i + 0], 1)
+      DREAM3D_COMPARE_FLOATS(rotation[3 * i + 1], rotTransform[4 * i + 1], 1)
+      DREAM3D_COMPARE_FLOATS(rotation[3 * i + 2], rotTransform[4 * i + 2], 1)
+      DREAM3D_COMPARE_FLOATS(translation[i], rotTransform[4 * i + 3], 1)
 
-      DREAM3D_COMPARE_FLOATS(shearing[3 * i + 0], shrTransform[4 * i + 0], 10)
-      DREAM3D_COMPARE_FLOATS(shearing[3 * i + 1], shrTransform[4 * i + 1], 10)
-      DREAM3D_COMPARE_FLOATS(shearing[3 * i + 2], shrTransform[4 * i + 2], 10)
-      DREAM3D_COMPARE_FLOATS(translation[i], shrTransform[4 * i + 3], 10)
+      DREAM3D_COMPARE_FLOATS(shearing[3 * i + 0], shrTransform[4 * i + 0], 1)
+      DREAM3D_COMPARE_FLOATS(shearing[3 * i + 1], shrTransform[4 * i + 1], 1)
+      DREAM3D_COMPARE_FLOATS(shearing[3 * i + 2], shrTransform[4 * i + 2], 1)
+      DREAM3D_COMPARE_FLOATS(translation[i], shrTransform[4 * i + 3], 1)
     }
   }
   else

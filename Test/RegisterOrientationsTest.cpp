@@ -61,7 +61,7 @@ int TestFilterAvailability()
 int RegisterOrientationsTest()
 {
   //create grid of points in cubochoric
-  size_t n = 3;//side length
+  size_t n = 8;//side length
   size_t numPoints = n * n * n;
   QVector<size_t> tDims(1, numPoints);
   QVector<size_t> cDims(1, 3);
@@ -198,17 +198,23 @@ int RegisterOrientationsTest()
     QuatF* registeredOrientations = reinterpret_cast<QuatF*>(pRegisteredOrientations->getPointer(0));
     DREAM3D_REQUIRE_VALID_POINTER(registeredOrientations)
 
-    //move all registered quats into FZ to more easily compare (alternatively could use getMisoQuat)
-    for(size_t i = 0; i < numPoints; i++) {
-      ops[xtalStructure]->getFZQuat(registeredOrientations[i]);
-    }
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    // this doesn't currently work due to boundary cases
+    // the misorientation calculation accumulates more floating point error but is functional
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //move all registered quats into FZ to more easily compare (alternatively could use getMisoQuat)
+    // for(size_t i = 0; i < numPoints; i++) {
+    //   ops[xtalStructure]->getFZQuat(registeredOrientations[i]);
+    // }
 
     //compare registered quats
+    float n1, n2, n3;
     for(size_t i = 0; i < numPoints; i++) {
-      DREAM3D_COMPARE_FLOATS(referenceOrientations[i].x, registeredOrientations[i].x, 10)
-      DREAM3D_COMPARE_FLOATS(referenceOrientations[i].y, registeredOrientations[i].y, 10)
-      DREAM3D_COMPARE_FLOATS(referenceOrientations[i].z, registeredOrientations[i].z, 10)
-      DREAM3D_COMPARE_FLOATS(referenceOrientations[i].w, registeredOrientations[i].w, 10)
+      DREAM3D_REQUIRED(ops[xtalStructure]->getMisoQuat(referenceOrientations[i], registeredOrientations[i], n1, n2, n3), <, 0.002f)
+      // DREAM3D_COMPARE_FLOATS(referenceOrientations[i].x, registeredOrientations[i].x, 10)
+      // DREAM3D_COMPARE_FLOATS(referenceOrientations[i].y, registeredOrientations[i].y, 10)
+      // DREAM3D_COMPARE_FLOATS(referenceOrientations[i].z, registeredOrientations[i].z, 10)
+      // DREAM3D_COMPARE_FLOATS(referenceOrientations[i].w, registeredOrientations[i].w, 10)
     }
   }
   else
