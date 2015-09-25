@@ -17,7 +17,12 @@
 #                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-project(DataFusionTest)
+#project(DataFusionTest)
+
+set(${PLUGIN_NAME}Test_SOURCE_DIR ${${PLUGIN_NAME}_SOURCE_DIR}/Test)
+set(${PLUGIN_NAME}Test_BINARY_DIR ${${PLUGIN_NAME}_BINARY_DIR}/Test)
+
+include_directories(${DataFusionTest_SOURCE_DIR})
 
 include(${DREAM3DProj_SOURCE_DIR}/Test/DREAM3DTestFunctions.cmake)
 
@@ -26,18 +31,37 @@ include_directories(${${PROJECT_NAME}_SOURCE_DIR})
 include_directories(${${PROJECT_NAME}_BINARY_DIR})
 
 
-set(TEST_TEMP_DIR ${${PROJECT_NAME}_BINARY_DIR}/Temp)
+set(TEST_TEMP_DIR ${${PROJECT_NAME}Test_BINARY_DIR}/Temp)
 # Make sure the directory is created during CMake time
 file(MAKE_DIRECTORY ${TEST_TEMP_DIR})
 
 
-configure_file(${${PROJECT_NAME}_SOURCE_DIR}/TestFileLocations.h.in
-               ${${PROJECT_NAME}_BINARY_DIR}/${PROJECT_NAME}FileLocations.h @ONLY IMMEDIATE)
+configure_file(${${PROJECT_NAME}_SOURCE_DIR}/Test/TestFileLocations.h.in
+               ${${PROJECT_NAME}_BINARY_DIR}/Test/${PROJECT_NAME}TestFileLocations.h @ONLY IMMEDIATE)
 
 set(${PROJECT_NAME}_Link_Libs Qt5::Core H5Support SIMPLib)
 
-AddDREAM3DUnitTest(TESTNAME RegisterPointSetsTest SOURCES ${${PROJECT_NAME}_SOURCE_DIR}/RegisterPointSetsTest.cpp LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs})
-AddDREAM3DUnitTest(TESTNAME MatchFeatureIdsTest SOURCES ${${PROJECT_NAME}_SOURCE_DIR}/MatchFeatureIdsTest.cpp LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs})
-AddDREAM3DUnitTest(TESTNAME RegisterOrientationsTest SOURCES ${${PROJECT_NAME}_SOURCE_DIR}/RegisterOrientationsTest.cpp LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs} OrientationLib)
-AddDREAM3DUnitTest(TESTNAME FuseVolumesTest SOURCES ${${PROJECT_NAME}_SOURCE_DIR}/FuseVolumesTest.cpp LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs})
-AddDREAM3DUnitTest(TESTNAME RenumberFeaturesTest SOURCES ${${PROJECT_NAME}_SOURCE_DIR}/RenumberFeaturesTest.cpp LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs})
+AddDREAM3DUnitTest(TESTNAME RegisterPointSetsTest 
+				  SOURCES ${${PLUGIN_NAME}Test_SOURCE_DIR}/RegisterPointSetsTest.cpp
+				  FOLDER "${PLUGIN_NAME}Plugin/Test" 
+				  LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs})
+
+AddDREAM3DUnitTest(TESTNAME MatchFeatureIdsTest 
+			      SOURCES ${${PLUGIN_NAME}Test_SOURCE_DIR}/MatchFeatureIdsTest.cpp 
+			      FOLDER "${PLUGIN_NAME}Plugin/Test"
+			      LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs})
+
+AddDREAM3DUnitTest(TESTNAME RegisterOrientationsTest 
+			      SOURCES ${${PLUGIN_NAME}Test_SOURCE_DIR}/RegisterOrientationsTest.cpp 
+			      FOLDER "${PLUGIN_NAME}Plugin/Test"
+			      LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs} OrientationLib)
+
+AddDREAM3DUnitTest(TESTNAME FuseVolumesTest 
+			      SOURCES ${${PLUGIN_NAME}Test_SOURCE_DIR}/FuseVolumesTest.cpp 
+			      FOLDER "${PLUGIN_NAME}Plugin/Test"
+			      LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs})
+
+AddDREAM3DUnitTest(TESTNAME RenumberFeaturesTest 
+			      SOURCES ${${PLUGIN_NAME}Test_SOURCE_DIR}/RenumberFeaturesTest.cpp 
+			      FOLDER "${PLUGIN_NAME}Plugin/Test"
+			      LINK_LIBRARIES ${${PROJECT_NAME}_Link_Libs})

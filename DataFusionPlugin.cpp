@@ -27,7 +27,9 @@
 #include "SIMPLib/Common/FilterFactory.hpp"
 
 #include "DataFusion/DataFusionConstants.h"
-#include "DataFusion/moc_DataFusionPlugin.cpp"
+
+// Include the MOC generated CPP file which has all the QMetaObject methods/data
+#include "moc_DataFusionPlugin.cpp"
 
 // -----------------------------------------------------------------------------
 //

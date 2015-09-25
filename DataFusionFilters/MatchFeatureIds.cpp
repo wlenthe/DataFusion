@@ -33,6 +33,10 @@
 #include "SIMPLib/FilterParameters/DataArrayCreationFilterParameter.h"
 
 #include "DataFusion/DataFusionConstants.h"
+
+// Include the MOC generated file for this class
+#include "moc_MatchFeatureIds.cpp"
+
 namespace Detail
 {
 // custom class to holding pair data

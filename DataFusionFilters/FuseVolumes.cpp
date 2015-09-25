@@ -40,6 +40,9 @@
 
 #include "DataFusion/DataFusionConstants.h"
 
+// Include the MOC generated file for this class
+#include "moc_FuseVolumes.cpp"
+
 #if (CMP_SIZEOF_SIZE_T == 4)
   typedef int32_t DimType;
 #else

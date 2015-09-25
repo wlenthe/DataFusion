@@ -32,6 +32,9 @@
 
 #include "DataFusion/DataFusionConstants.h"
 
+// Include the MOC generated file for this class
+#include "moc_RegisterPointSets.cpp"
+
 #include <Eigen/Dense>
 #include <Eigen/SVD>
 
