@@ -338,13 +338,15 @@ void RegisterPointSets::execute()
   //compute center of mass for each point set (computations require both sets centered at origin)
   Eigen::Vector3d xBar = Eigen::Vector3d::Zero();//moving points centroid
   Eigen::Vector3d yBar = Eigen::Vector3d::Zero();//reference points centroid
-  float totalW = 0.0f;
+  double totalW = 0.0;
   for(size_t i = 0; i < numFeatures; i++)
   {
     size_t index = 3 * sharedFeatures[i];
-    float w = 1.0f;
-    if(getUseWeights())
+    double w = 1.0;
+    if(getUseWeights()) {
       w = m_Weights[sharedFeatures[i]];
+      totalW += w;
+    }
     xBar += w * Eigen::Vector3d(m_MovingCentroids[index + 0], m_MovingCentroids[index + 1], m_MovingCentroids[index + 2]);
     yBar += w * Eigen::Vector3d(m_ReferenceCentroids[index + 0], m_ReferenceCentroids[index + 1], m_ReferenceCentroids[index + 2]);
   }
@@ -353,6 +355,12 @@ void RegisterPointSets::execute()
   yBar /= numFeatures;
   if(getUseWeights())
   {
+    if(totalW < std::numeric_limits<double>::epsilon()) {
+      QString ss = QObject::tr("Total weight nearly zero (%1)").arg(totalW);
+      setErrorCondition(-101);
+      notifyErrorMessage(getHumanLabel(), ss, getErrorCondition());
+      return;
+    }
     xBar /= totalW;
     yBar /= totalW;
   }
@@ -377,14 +385,27 @@ void RegisterPointSets::execute()
   //shear (requires full affine) and no shear are handled differently
   if(affine)
   {
-    bool invertible;
-    Eigen::Matrix3d inverse;
-    variance.computeInverseWithCheck(inverse, invertible);
-    if(invertible)
-      transformation = inverse * covariance;
-    else
-      notifyWarningMessage(getHumanLabel(), "singular variance matrix", 1);
-    transformation.transposeInPlace();
+    //the covariance is singular if all points are coplanar, collinear, or coincident but the pseduoinverse is still ok
+    //check for singularity with matrix condition (~log2(condition) bits of precision are lost)
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(covariance, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    double condition = fabs(svd.singularValues()(0) / svd.singularValues()(2));
+    double bits = log2(condition);
+
+    //as a rule of thumb I'll say if we use lose half of the mantis digits the matrix is singular
+    if(2 * bits > std::numeric_limits<double>::digits) {
+      QString ss = QObject::tr("Singular covariance matrix (condition number of %1), points likely coplanar, collinear, or coincident").arg(condition);
+      notifyWarningMessage(getHumanLabel(), ss, 1);
+    }
+
+    //create psuedoinverse of singular value matrix
+    Eigen::Matrix3d sInv = Eigen::Matrix3d::Identity();
+    sInv.diagonal() = svd.singularValues();
+    for(size_t i = 0; i < 3; i++) {
+      sInv(i, i) = (2 * log2( fabs( svd.singularValues()(0) / sInv(i, i) ) ) > std::numeric_limits<double>::digits) ? 0 : 1 / sInv(i, i);
+    }
+
+    //transformation is cov^-1 * var (or psuedoinverse(cov) * var)
+    transformation = (svd.matrixV() * sInv * svd.matrixU().transpose()) * variance;
   }
   else
   {
