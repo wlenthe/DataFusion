@@ -187,6 +187,7 @@ void FuseVolumes::setupFilterParameters()
 
   DataArraySelectionFilterParameter::RequirementType req;
   parameters.push_back(DataArraySelectionFilterParameter::New("Transformation", "TransformationArrayPath", getTransformationArrayPath(), FilterParameter::RequiredArray, req));
+  parameters.back()->setGroupIndex(0);
 
   QStringList headers;
   headers << "" << "" << "" << "";
