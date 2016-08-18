@@ -29,7 +29,8 @@ START_FILTER_GROUP(${DataFusion_BINARY_DIR} "${_filterGroupName}" "DataFusion")
 # List your public filters here
 set(_PublicFilters
   FuseVolumes
-  MatchFeatureIds
+  MatchFeatureIdsManual
+  MatchFeatureIdsGeometry
   RegisterOrientations
   RegisterPointSets
   RenumberFeatures
@@ -51,7 +52,7 @@ endforeach()
 # This is the list of Private Filters. These filters are available from other filters but the user will not
 # be able to use them from the DREAM3D user interface.
 set(_PrivateFilters
-
+  MatchFeatureIds
 )
 
 #-----------------

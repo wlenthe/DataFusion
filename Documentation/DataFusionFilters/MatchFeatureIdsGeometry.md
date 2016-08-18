@@ -1,4 +1,4 @@
-Match Feature Ids {#matchfeatureids}
+Match Feature Ids (Geometry) {#matchfeatureidsgeometry}
 =============
 
 ## Group (Subgroup) ##
