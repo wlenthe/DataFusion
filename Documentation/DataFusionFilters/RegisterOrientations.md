@@ -5,7 +5,7 @@ RegisterOrientations {#registerorientations}
 DataFusion (DataFusion)
 
 ## Description ##
-This filter finds the average rotation from <B>Moving Quats</B> to <B>Reference Quats</B> and then applies it to <B>Moving Quats</B> to align their crystallographic reference frames. The average rotation is computed with the following algorithm:
+This filter finds the average rotation from <B>Moving Quats</B> to <B>Reference Quats</B> (and then optionally applies it to <B>Moving Quats</B> to align their crystallographic reference frames). The average rotation is computed with the following algorithm:
 
 - Create list of features that are good in both <B>Reference Good Features</B> and <B>Moving Good Features</B> (these are assumed to be the same feature and are checked to make sure they shared the same crystal structure).
 - Loop over shared good features and for each:
@@ -24,6 +24,7 @@ This filter finds the average rotation from <B>Moving Quats</B> to <B>Reference 
 |------------------|------|
 | Use Good Features| Boolean |
 | Minimum Average Rotation Angle | Double |
+| Apply Transformation | Boolean |
 
 ## Required Arrays ##
 

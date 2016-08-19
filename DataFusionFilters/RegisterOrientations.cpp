@@ -25,7 +25,9 @@
 
 #include "SIMPLib/FilterParameters/DataArraySelectionFilterParameter.h"
 #include "SIMPLib/FilterParameters/LinkedBooleanFilterParameter.h"
+#include "SIMPLib/FilterParameters/BooleanFilterParameter.h"
 #include "SIMPLib/FilterParameters/DoubleFilterParameter.h"
+#include "SIMPLib/FilterParameters/StringFilterParameter.h"
 
 #include "DataFusion/DataFusionConstants.h"
 
@@ -45,6 +47,8 @@ RegisterOrientations::RegisterOrientations() :
   m_MovingCrystalStructuresArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellEnsembleAttributeMatrixName, DREAM3D::EnsembleData::CrystalStructures),
   m_ReferenceGoodFeaturesArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellFeatureAttributeMatrixName, DREAM3D::FeatureData::GoodFeatures),
   m_MovingGoodFeaturesArrayPath(DREAM3D::Defaults::VolumeDataContainerName, DREAM3D::Defaults::CellFeatureAttributeMatrixName, DREAM3D::FeatureData::GoodFeatures),
+  m_AttributeMatrixName(DataFusionConstants::Transformation),
+  m_TransformName(DataFusionConstants::Transformation),
   m_MinMiso(1.0),
   m_UseGoodFeatures(true),
   m_ReferenceAvgQuats(NULL),
@@ -54,7 +58,9 @@ RegisterOrientations::RegisterOrientations() :
   m_ReferencePhases(NULL),
   m_MovingPhases(NULL),
   m_ReferenceCrystalStructures(NULL),
-  m_MovingCrystalStructures(NULL)
+  m_MovingCrystalStructures(NULL),
+  m_Transform(NULL),
+  m_ApplyTransformation(false)
 {
   m_OrientationOps = SpaceGroupOps::getOrientationOpsQVector();
   setupFilterParameters();
@@ -88,6 +94,9 @@ void RegisterOrientations::setupFilterParameters()
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Good Features", "ReferenceGoodFeaturesArrayPath", getReferenceGoodFeaturesArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Moving Good Features", "MovingGoodFeaturesArrayPath", getMovingGoodFeaturesArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DoubleFilterParameter::New("Minimum Average Rotation Angle", "MinMiso", getMinMiso(), FilterParameter::Parameter));
+  parameters.push_back(StringFilterParameter::New("Output Attribute Matrix Name", "AttributeMatrixName", getAttributeMatrixName(), FilterParameter::CreatedArray));
+  parameters.push_back(StringFilterParameter::New("Output Array Name", "TransformName", getTransformName(), FilterParameter::CreatedArray, 1));
+  parameters.push_back(BooleanFilterParameter::New("Apply Transformation", "ApplyTransformation", getApplyTransformation(), FilterParameter::Parameter));
   setFilterParameters(parameters);
 }
 
@@ -107,6 +116,9 @@ void RegisterOrientations::readFilterParameters(AbstractFilterParametersReader* 
   setReferenceCrystalStructuresArrayPath( reader->readDataArrayPath("ReferenceCrystalStructuresArrayPath", getReferenceCrystalStructuresArrayPath() ) );
   setMovingCrystalStructuresArrayPath( reader->readDataArrayPath("MovingCrystalStructuresArrayPath", getMovingCrystalStructuresArrayPath() ) );
   setMinMiso( reader->readValue("MinMiso", getMinMiso() ) );
+  setAttributeMatrixName( reader->readString( "AttributeMatrixName", getAttributeMatrixName() ) );
+  setTransformName(reader->readString("TransformName", getTransformName() ) );
+  setApplyTransformation( reader->readValue("ApplyTransformation", getApplyTransformation() ) );
   reader->closeFilterGroup();
 }
 
@@ -127,6 +139,9 @@ int RegisterOrientations::writeFilterParameters(AbstractFilterParametersWriter* 
   SIMPL_FILTER_WRITE_PARAMETER(ReferenceCrystalStructuresArrayPath)
   SIMPL_FILTER_WRITE_PARAMETER(MovingCrystalStructuresArrayPath)
   SIMPL_FILTER_WRITE_PARAMETER(MinMiso)
+  SIMPL_FILTER_WRITE_PARAMETER(AttributeMatrixName)
+  SIMPL_FILTER_WRITE_PARAMETER(TransformName)
+  SIMPL_FILTER_WRITE_PARAMETER(ApplyTransformation)
   writer->closeFilterGroup();
   return ++index; // we want to return the next index that was just written to
 }
@@ -172,6 +187,12 @@ void RegisterOrientations::dataCheck()
   }
   getDataContainerArray()->validateNumberOfTuples<AbstractFilter>(this, referenceDataArrayPaths);
   getDataContainerArray()->validateNumberOfTuples<AbstractFilter>(this, movingDataArrayPaths);
+
+  DataArrayPath tempPath;
+  QVector<size_t> transDims(1, 4);
+  tempPath.update(getMovingAvgQuatsArrayPath().getDataContainerName(), getAttributeMatrixName(), getTransformName() );
+  m_TransformPtr = getDataContainerArray()->createNonPrereqArrayFromPath<DataArray<float>, AbstractFilter, float>(this, tempPath, 0, transDims);
+  if( NULL != m_TransformPtr.lock().get() ) m_Transform = m_TransformPtr.lock()->getPointer(0);
 }
 
 // -----------------------------------------------------------------------------
@@ -256,8 +277,7 @@ void RegisterOrientations::execute()
    ***************************************************************************************************************************************/
   QuatF rotation = QuaternionMathF::New(0, 0, 0, 0);
 
-  for(size_t i = 0; i < sharedFeatures.size(); i++)
-  {
+  for(size_t i = 0; i < sharedFeatures.size(); i++) {
     //compute difference in orientation
     float minAvgMiso = 999.9f;
     QuatF gRef, gMovInv, candidateQuat, bestQuat;
@@ -268,37 +288,32 @@ void RegisterOrientations::execute()
     uint32_t xtal = m_ReferenceCrystalStructures[m_ReferencePhases[sharedFeatures[i]]];//already checked that phases match
 
     //loop over symmetry operators for structure computing all possible equivilent ways of expressing rotation
-    for(int j = 0; j < symOpsList[xtal].size(); j++)
-    {
+    for(int j = 0; j < symOpsList[xtal].size(); j++) {
       QuatF tempQuat;
       float avgMiso = 0.0f;
       QuaternionMathF::Multiply(gMovInv, symOpsList[xtal][j], tempQuat);
       QuaternionMathF::Multiply(tempQuat, gRef, candidateQuat);
 
       //loop over all other pairs finding the resuling misorientation if the candidate rotation is applied to each
-      for(size_t k = 0; k < sharedFeatures.size(); k++)
-      {
-        if(k != i)
-        {
+      for(size_t k = 0; k < sharedFeatures.size(); k++) {
+        if(k != i) {
           QuatF otherGMovRotInv;
+          float cosMinAngle = 0.0f;
           QuaternionMathF::Multiply(movingQuats[sharedFeatures[k]], candidateQuat, otherGMovRotInv);
           QuaternionMathF::Conjugate(otherGMovRotInv);
-          QuaternionMathF::Multiply(referenceQuats[sharedFeatures[k]], otherGMovRotInv, tempQuat);
-
-          float cosMinAngle = 0.0f;
-          for(int l = 0; l < symOpsList[xtal].size(); l++)
-          {
-            float cosAngle = fabs(tempQuat.w * symOpsList[xtal][l].w - tempQuat.x * symOpsList[xtal][l].x - tempQuat.y * symOpsList[xtal][l].y - tempQuat.z * symOpsList[xtal][l].z);
-            if(cosAngle > cosMinAngle)
-              cosMinAngle = cosAngle;
+          for(size_t m = 0; m < symOpsList[xtal].size(); m++) {
+            QuatF temp, miso;
+            QuaternionMathF::Multiply(otherGMovRotInv, symOpsList[xtal][m], temp);
+            QuaternionMathF::Multiply(temp, referenceQuats[sharedFeatures[k]], miso);
+            float cosAngle = fabs(miso.w);
+            if(cosAngle > cosMinAngle) cosMinAngle = cosAngle;
           }
           avgMiso += acos(std::min(cosMinAngle, 1.0f));
         }
       }
       avgMiso /= static_cast<float>(sharedFeatures.size() - 1);
 
-      if(avgMiso < minAvgMiso)
-      {
+      if(avgMiso < minAvgMiso) {
         minAvgMiso = avgMiso;
         QuaternionMathF::Copy(candidateQuat, bestQuat);
       }
@@ -306,27 +321,32 @@ void RegisterOrientations::execute()
 
     //convert the average misorientation of the best match to degrees and add best match to list of matches
     if(bestQuat.w < 0) QuaternionMathF::Negate(bestQuat);//only consider rotations 0-180
-    if(2.0f * minAvgMiso < minMisoAngle)
-    {
+    if(2.0f * minAvgMiso < minMisoAngle) {
       QuaternionMathF::Add(rotation, bestQuat, rotation);
       matchCount++;
     }
   }
 
-  //find average rotation and apply
-  if(0 == matchCount)
-  {
+  //find average rotation
+  if(0 == matchCount) {
     setErrorCondition(-3);
     notifyErrorMessage(getHumanLabel(), "failed to compute rotation (no rotations within tolerance)", getErrorCondition());
     return;
   }
-
   QuaternionMathF::UnitQuaternion(rotation);//for cubochoric divide by matchCount
-  for(int i = 0; i < movingNumFeatures; i++)
-  {
-    QuatF correctedQuat;
-    QuaternionMathF::Multiply(movingQuats[i], rotation, correctedQuat);
-    QuaternionMathF::Copy(correctedQuat, movingQuats[i]);
+  
+  float s = std::sin(std::acos(rotation.w));
+  m_Transform[0] = rotation.x / s;
+  m_Transform[1] = rotation.y / s;
+  m_Transform[2] = rotation.z / s;
+  m_Transform[3] = 2 * std::acos(rotation.w);
+
+  if(getApplyTransformation()) {
+    for(int i = 0; i < movingNumFeatures; i++) {
+      QuatF correctedQuat;
+      QuaternionMathF::Multiply(movingQuats[i], rotation, correctedQuat);
+      QuaternionMathF::Copy(correctedQuat, movingQuats[i]);
+    }
   }
 
   notifyStatusMessage(getHumanLabel(), "Complete");

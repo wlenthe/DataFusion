@@ -17,69 +17,44 @@
  *                                                                             *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
  
-#ifndef _RegisterOrientations_H_
-#define _RegisterOrientations_H_
+#ifndef _RotateQuatReferenceFrame_H_
+#define _RotateQuatReferenceFrame_H_
 
 #include "SIMPLib/SIMPLib.h"
 #include "SIMPLib/Common/SIMPLibSetGetMacros.h"
 #include "SIMPLib/Common/AbstractFilter.h"
 
-#include "OrientationLib/SpaceGroupOps/SpaceGroupOps.h"
+#include "SIMPLib/FilterParameters/FloatVec3FilterParameter.h"
 
 /**
- * @brief The RegisterOrientations class. See [Filter documentation](@ref registerorientations) for details.
+ * @brief The RotateQuatReferenceFrame class. See [Filter documentation](@ref RotateQuatReferenceFrame) for details.
  */
-class RegisterOrientations : public AbstractFilter
+class RotateQuatReferenceFrame : public AbstractFilter
 {
   Q_OBJECT /* Need this for Qt's signals and slots mechanism to work */
 
   public:
-    SIMPL_SHARED_POINTERS(RegisterOrientations)
-    SIMPL_STATIC_NEW_MACRO(RegisterOrientations)
-    SIMPL_TYPE_MACRO_SUPER(RegisterOrientations, AbstractFilter)
+    SIMPL_SHARED_POINTERS(RotateQuatReferenceFrame)
+    SIMPL_STATIC_NEW_MACRO(RotateQuatReferenceFrame)
+    SIMPL_TYPE_MACRO_SUPER(RotateQuatReferenceFrame, AbstractFilter)
 
-    virtual ~RegisterOrientations();
+    virtual ~RotateQuatReferenceFrame();
 
     //required arrays
-    SIMPL_FILTER_PARAMETER(DataArrayPath, ReferenceAvgQuatsArrayPath)
-    Q_PROPERTY(DataArrayPath ReferenceAvgQuatsArrayPath READ getReferenceAvgQuatsArrayPath WRITE setReferenceAvgQuatsArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, QuatsArrayPath)
+    Q_PROPERTY(DataArrayPath QuatsArrayPath READ getQuatsArrayPath WRITE setQuatsArrayPath)
 
-    SIMPL_FILTER_PARAMETER(DataArrayPath, MovingAvgQuatsArrayPath)
-    Q_PROPERTY(DataArrayPath MovingAvgQuatsArrayPath READ getMovingAvgQuatsArrayPath WRITE setMovingAvgQuatsArrayPath)
+    SIMPL_FILTER_PARAMETER(DataArrayPath, TransformPath)
+    Q_PROPERTY(DataArrayPath TransformPath READ getTransformPath WRITE setTransformPath)
+    
+    SIMPL_FILTER_PARAMETER(int, TransformationType)
+    Q_PROPERTY(int TransformationType READ getTransformationType WRITE setTransformationType)
 
-    SIMPL_FILTER_PARAMETER(DataArrayPath, ReferencePhasesArrayPath)
-    Q_PROPERTY(DataArrayPath ReferencePhasesArrayPath READ getReferencePhasesArrayPath WRITE setReferencePhasesArrayPath)
+    SIMPL_FILTER_PARAMETER(FloatVec3_t, Axis)
+    Q_PROPERTY(FloatVec3_t Axis READ getAxis WRITE setAxis)
 
-    SIMPL_FILTER_PARAMETER(DataArrayPath, MovingPhasesArrayPath)
-    Q_PROPERTY(DataArrayPath MovingPhasesArrayPath READ getMovingPhasesArrayPath WRITE setMovingPhasesArrayPath)
-
-    SIMPL_FILTER_PARAMETER(DataArrayPath, ReferenceCrystalStructuresArrayPath)
-    Q_PROPERTY(DataArrayPath ReferenceCrystalStructuresArrayPath READ getReferenceCrystalStructuresArrayPath WRITE setReferenceCrystalStructuresArrayPath)
-
-    SIMPL_FILTER_PARAMETER(DataArrayPath, MovingCrystalStructuresArrayPath)
-    Q_PROPERTY(DataArrayPath MovingCrystalStructuresArrayPath READ getMovingCrystalStructuresArrayPath WRITE setMovingCrystalStructuresArrayPath)
-
-    SIMPL_FILTER_PARAMETER(DataArrayPath, ReferenceGoodFeaturesArrayPath)
-    Q_PROPERTY(DataArrayPath ReferenceGoodFeaturesArrayPath READ getReferenceGoodFeaturesArrayPath WRITE setReferenceGoodFeaturesArrayPath)
-
-    SIMPL_FILTER_PARAMETER(DataArrayPath, MovingGoodFeaturesArrayPath)
-    Q_PROPERTY(DataArrayPath MovingGoodFeaturesArrayPath READ getMovingGoodFeaturesArrayPath WRITE setMovingGoodFeaturesArrayPath)
-
-    SIMPL_FILTER_PARAMETER(double, MinMiso)
-    Q_PROPERTY(double MinMiso READ getMinMiso WRITE setMinMiso)
-
-    SIMPL_FILTER_PARAMETER(bool, UseGoodFeatures)
-    Q_PROPERTY(bool UseGoodFeatures READ getUseGoodFeatures WRITE setUseGoodFeatures)
-
-    SIMPL_FILTER_PARAMETER(bool, ApplyTransformation)
-    Q_PROPERTY(bool ApplyTransformation READ getApplyTransformation WRITE setApplyTransformation)
-
-    //created arrays
-    SIMPL_FILTER_PARAMETER(QString, AttributeMatrixName)
-    Q_PROPERTY(QString AttributeMatrixName READ getAttributeMatrixName WRITE setAttributeMatrixName)
-
-    SIMPL_FILTER_PARAMETER(QString, TransformName)
-    Q_PROPERTY(QString TransformName READ getTransformName WRITE setTransformName)
+    SIMPL_FILTER_PARAMETER(float, Angle)
+    Q_PROPERTY(float Angle READ getAngle WRITE setAngle)
 
     /**
      * @brief getCompiledLibraryName Reimplemented from @see AbstractFilter class
@@ -155,7 +130,7 @@ class RegisterOrientations : public AbstractFilter
     void preflightExecuted();
 
   protected:
-    RegisterOrientations();
+    RotateQuatReferenceFrame();
 
     /**
      * @brief dataCheck Checks for the appropriate parameter values and availability of arrays
@@ -163,19 +138,11 @@ class RegisterOrientations : public AbstractFilter
     void dataCheck();
 
   private:
-    QVector<SpaceGroupOps::Pointer> m_OrientationOps;
-    DEFINE_DATAARRAY_VARIABLE(float, ReferenceAvgQuats)
-    DEFINE_DATAARRAY_VARIABLE(float, MovingAvgQuats)
-    DEFINE_DATAARRAY_VARIABLE(bool, ReferenceGoodFeatures)
-    DEFINE_DATAARRAY_VARIABLE(bool, MovingGoodFeatures)
-    DEFINE_DATAARRAY_VARIABLE(int32_t, ReferencePhases)
-    DEFINE_DATAARRAY_VARIABLE(int32_t, MovingPhases)
-    DEFINE_DATAARRAY_VARIABLE(unsigned int, ReferenceCrystalStructures)
-    DEFINE_DATAARRAY_VARIABLE(unsigned int, MovingCrystalStructures)
+    DEFINE_DATAARRAY_VARIABLE(float, Quats)
     DEFINE_DATAARRAY_VARIABLE(float, Transform)
 
-    RegisterOrientations(const RegisterOrientations&); // Copy Constructor Not Implemented
-    void operator=(const RegisterOrientations&); // Operator '=' Not Implemented
+    RotateQuatReferenceFrame(const RotateQuatReferenceFrame&); // Copy Constructor Not Implemented
+    void operator=(const RotateQuatReferenceFrame&); // Operator '=' Not Implemented
 };
 
-#endif /* _RegisterOrientations_H_ */
+#endif /* _RotateQuatReferenceFrame_H_ */
