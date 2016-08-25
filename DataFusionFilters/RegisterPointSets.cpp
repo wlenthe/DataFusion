@@ -29,6 +29,7 @@
 #include "SIMPLib/FilterParameters/DataArraySelectionFilterParameter.h"
 #include "SIMPLib/FilterParameters/StringFilterParameter.h"
 #include "SIMPLib/FilterParameters/DataContainerSelectionFilterParameter.h"
+#include "SIMPLib/Geometry/ImageGeom.h"
 
 #include "DataFusion/DataFusionConstants.h"
 
@@ -124,10 +125,15 @@ void RegisterPointSets::setupFilterParameters()
 
   //required arrays
   DataArraySelectionFilterParameter::RequirementType req;
+  req = DataArraySelectionFilterParameter::CreateCategoryRequirement(DREAM3D::TypeNames::Float, 3, DREAM3D::AttributeMatrixObjectType::Feature);
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Points", "ReferenceCentroidsArrayPath", getReferenceCentroidsArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Moving Points", "MovingCentroidsArrayPath", getMovingCentroidsArrayPath(), FilterParameter::RequiredArray, req));
+  
+  req = DataArraySelectionFilterParameter::CreateCategoryRequirement(DREAM3D::TypeNames::Bool, 1, DREAM3D::AttributeMatrixObjectType::Feature);
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Good Points", "ReferenceGoodFeaturesArrayPath", getReferenceGoodFeaturesArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Moving Good Points", "MovingGoodFeaturesArrayPath", getMovingGoodFeaturesArrayPath(), FilterParameter::RequiredArray, req));
+  
+  req = DataArraySelectionFilterParameter::CreateCategoryRequirement(DREAM3D::TypeNames::Float, 1, DREAM3D::AttributeMatrixObjectType::Feature);
   parameters.push_back(DataArraySelectionFilterParameter::New("Weights", "WeightsArrayPath", getWeightsArrayPath(), FilterParameter::RequiredArray, req));
 
   //created arrays
@@ -216,7 +222,7 @@ void RegisterPointSets::dataCheck()
     notifyErrorMessage(getHumanLabel(), "Rectilinear grid geometry required for Reference Atrribute Matrix.", -390);
 
   if(DREAM3D::GeometryType::ImageGeometry != getDataContainerArray()->getDataContainer(getMovingCentroidsArrayPath().getDataContainerName())->getGeometry()->getGeometryType())
-    notifyErrorMessage(getHumanLabel(), "Rectilinear grid geometry required for Moving Atrribute Matrix.", -390);
+    notifyErrorMessage(getHumanLabel(), "Rectilinear grid geometry required for Moving Atrribute Matrix.", -391);
 
   dims[0] = 1;
   if(getUseGoodPoints())
@@ -242,9 +248,20 @@ void RegisterPointSets::dataCheck()
   if(getErrorCondition() < 0) return;
 
   //created arrays
-    QVector<size_t> tDims(1, 1);//1 spot (single transformation)
+  QVector<size_t> tDims(1, 1);//1 spot (single transformation)
   DataContainer::Pointer m = getDataContainerArray()->getPrereqDataContainer<AbstractFilter>(this, getReferenceCentroidsArrayPath().getDataContainerName());
-  AttributeMatrix::Pointer attrMat = m->createNonPrereqAttributeMatrix<AbstractFilter>(this, getAttributeMatrixName(), tDims, DREAM3D::AttributeMatrixType::MetaData);
+  AttributeMatrix::Pointer am = m->getAttributeMatrix(getAttributeMatrixName());
+  if(DataContainer::NullPointer() != m) {
+    AttributeMatrix::Pointer am = m->getAttributeMatrix(getAttributeMatrixName());
+    if(AttributeMatrix::NullPointer() != am) {
+      if(DREAM3D::AttributeMatrixType::MetaData != am->getType()) {
+        notifyErrorMessage(getHumanLabel(), "Existing attribute matrix doesn't have MetaData type", -392);
+        return;
+      } 
+    } else {
+      AttributeMatrix::Pointer attrMat = m->createNonPrereqAttributeMatrix<AbstractFilter>(this, getAttributeMatrixName(), tDims, DREAM3D::AttributeMatrixType::MetaData);
+    }
+  }
 
   //create array to hold transformation
   DataArrayPath tempPath;
@@ -385,15 +402,15 @@ void RegisterPointSets::execute()
   //shear (requires full affine) and no shear are handled differently
   if(affine)
   {
-    //the covariance is singular if all points are coplanar, collinear, or coincident but the pseduoinverse is still ok
+    //the variance is singular if all points are coplanar, collinear, or coincident but the pseduoinverse is still ok
     //check for singularity with matrix condition (~log2(condition) bits of precision are lost)
-    Eigen::JacobiSVD<Eigen::Matrix3d> svd(covariance, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(variance, Eigen::ComputeFullU | Eigen::ComputeFullV);
     double condition = fabs(svd.singularValues()(0) / svd.singularValues()(2));
     double bits = log2(condition);
 
     //as a rule of thumb I'll say if we use lose half of the mantis digits the matrix is singular
     if(2 * bits > std::numeric_limits<double>::digits) {
-      QString ss = QObject::tr("Singular covariance matrix (condition number of %1), points likely coplanar, collinear, or coincident").arg(condition);
+      QString ss = QObject::tr("Singular variance matrix (condition number of %1), points likely coplanar, collinear, or coincident").arg(condition);
       notifyWarningMessage(getHumanLabel(), ss, 1);
     }
 
@@ -404,8 +421,9 @@ void RegisterPointSets::execute()
       sInv(i, i) = (2 * log2( fabs( svd.singularValues()(0) / sInv(i, i) ) ) > std::numeric_limits<double>::digits) ? 0 : 1 / sInv(i, i);
     }
 
-    //transformation is cov^-1 * var (or psuedoinverse(cov) * var)
-    transformation = (svd.matrixV() * sInv * svd.matrixU().transpose()) * variance;
+    //transformation^T is var^-1 * cov (or psuedoinverse(var) * cov)
+    transformation = ((svd.matrixV() * sInv * svd.matrixU().transpose()) * covariance);
+    transformation.transposeInPlace();
   }
   else
   {

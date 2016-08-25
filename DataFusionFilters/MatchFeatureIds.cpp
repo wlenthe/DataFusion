@@ -65,10 +65,12 @@ void MatchFeatureIds::setupFilterParameters()
 {
   FilterParameterVector parameters;
   DataArraySelectionFilterParameter::RequirementType req;
+  req = DataArraySelectionFilterParameter::CreateCategoryRequirement(DREAM3D::TypeNames::Int32, 1, DREAM3D::AttributeMatrixObjectType::Element);
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Feature Ids", "ReferenceFeatureIdsArrayPath", getReferenceFeatureIdsArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Moving Feature Ids", "MovingFeatureIdsArrayPath", getMovingFeatureIdsArrayPath(), FilterParameter::RequiredArray, req));
 
   AttributeMatrixSelectionFilterParameter::RequirementType amReq;
+  amReq = AttributeMatrixSelectionFilterParameter::CreateRequirement(DREAM3D::AttributeMatrixObjectType::Feature);
   parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Reference Cell Feature Attribute Matrix", "ReferenceCellFeatureAttributeMatrixPath", getReferenceCellFeatureAttributeMatrixPath(), FilterParameter::RequiredArray, amReq));
   parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Moving Cell Feature Attribute Matrix", "MovingCellFeatureAttributeMatrixPath", getMovingCellFeatureAttributeMatrixPath(), FilterParameter::RequiredArray, amReq));
 
@@ -204,6 +206,13 @@ void MatchFeatureIds::execute()
 
   // create map of current to new moving grain ids
   std::vector<size_t> idMap = match();
+
+  for(size_t i = 1; i < maxMovingId; i++) {
+    if(idMap[i] != static_cast<size_t>(-1)) {
+      m_MovingUnique[i] = false;
+      m_ReferenceUnique[idMap[i]] = false;
+    }
+  }
 
   //push unmatched moving grains above highest reference id
   int originalMovingSize = m_MovingUniquePtr.lock()->getNumberOfTuples();

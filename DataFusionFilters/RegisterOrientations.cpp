@@ -80,10 +80,15 @@ void RegisterOrientations::setupFilterParameters()
 {
   FilterParameterVector parameters;
   DataArraySelectionFilterParameter::RequirementType req;
+  req = DataArraySelectionFilterParameter::CreateCategoryRequirement(DREAM3D::TypeNames::Float, 4, DREAM3D::AttributeMatrixObjectType::Feature);
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Average Quats", "ReferenceAvgQuatsArrayPath", getReferenceAvgQuatsArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Moving Average Quats", "MovingAvgQuatsArrayPath", getMovingAvgQuatsArrayPath(), FilterParameter::RequiredArray, req));
+  
+  req = DataArraySelectionFilterParameter::CreateCategoryRequirement(DREAM3D::TypeNames::Int32, 1, DREAM3D::AttributeMatrixObjectType::Feature);
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Feature Phases", "ReferencePhasesArrayPath", getReferencePhasesArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Moving Feature Phases", "MovingPhasesArrayPath", getMovingPhasesArrayPath(), FilterParameter::RequiredArray, req));
+
+  req = DataArraySelectionFilterParameter::CreateCategoryRequirement(DREAM3D::TypeNames::UInt32, 1, DREAM3D::AttributeMatrixObjectType::Ensemble);
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Crystal Structures", "ReferenceCrystalStructuresArrayPath", getReferenceCrystalStructuresArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Moving Crystal Structures", "MovingCrystalStructuresArrayPath", getMovingCrystalStructuresArrayPath(), FilterParameter::RequiredArray, req));
   {
@@ -91,8 +96,11 @@ void RegisterOrientations::setupFilterParameters()
       linkedProps << "ReferenceGoodFeaturesArrayPath" << "MovingGoodFeaturesArrayPath";
     parameters.push_back(LinkedBooleanFilterParameter::New("Use Good Features", "UseGoodFeatures", getUseGoodFeatures(), linkedProps, FilterParameter::Parameter));
   }
+
+  req = DataArraySelectionFilterParameter::CreateCategoryRequirement(DREAM3D::TypeNames::Bool, 1, DREAM3D::AttributeMatrixObjectType::Feature);
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Good Features", "ReferenceGoodFeaturesArrayPath", getReferenceGoodFeaturesArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Moving Good Features", "MovingGoodFeaturesArrayPath", getMovingGoodFeaturesArrayPath(), FilterParameter::RequiredArray, req));
+  
   parameters.push_back(DoubleFilterParameter::New("Minimum Average Rotation Angle", "MinMiso", getMinMiso(), FilterParameter::Parameter));
   parameters.push_back(StringFilterParameter::New("Output Attribute Matrix Name", "AttributeMatrixName", getAttributeMatrixName(), FilterParameter::CreatedArray));
   parameters.push_back(StringFilterParameter::New("Output Array Name", "TransformName", getTransformName(), FilterParameter::CreatedArray, 1));
@@ -188,9 +196,24 @@ void RegisterOrientations::dataCheck()
   getDataContainerArray()->validateNumberOfTuples<AbstractFilter>(this, referenceDataArrayPaths);
   getDataContainerArray()->validateNumberOfTuples<AbstractFilter>(this, movingDataArrayPaths);
 
+  QVector<size_t> tDims(1, 1);//1 spot (single transformation)
+  DataContainer::Pointer m = getDataContainerArray()->getPrereqDataContainer<AbstractFilter>(this, getReferenceAvgQuatsArrayPath().getDataContainerName());
+  if(DataContainer::NullPointer() != m) {
+    AttributeMatrix::Pointer am = m->getAttributeMatrix(getAttributeMatrixName());
+    if(AttributeMatrix::NullPointer() != am) {
+      if(DREAM3D::AttributeMatrixType::MetaData != am->getType()) {
+        notifyErrorMessage(getHumanLabel(), "Existing attribute matrix doesn't have MetaData type", -392);
+        return;
+      } 
+    } else {
+      AttributeMatrix::Pointer attrMat = m->createNonPrereqAttributeMatrix<AbstractFilter>(this, getAttributeMatrixName(), tDims, DREAM3D::AttributeMatrixType::MetaData);
+    }
+  }
+
+  //create array to hold transformation
   DataArrayPath tempPath;
   QVector<size_t> transDims(1, 4);
-  tempPath.update(getMovingAvgQuatsArrayPath().getDataContainerName(), getAttributeMatrixName(), getTransformName() );
+  tempPath.update(getReferenceAvgQuatsArrayPath().getDataContainerName(), getAttributeMatrixName(), getTransformName() );
   m_TransformPtr = getDataContainerArray()->createNonPrereqArrayFromPath<DataArray<float>, AbstractFilter, float>(this, tempPath, 0, transDims);
   if( NULL != m_TransformPtr.lock().get() ) m_Transform = m_TransformPtr.lock()->getPointer(0);
 }

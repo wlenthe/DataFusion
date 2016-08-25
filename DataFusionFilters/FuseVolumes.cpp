@@ -28,6 +28,7 @@
 #include "SIMPLib/FilterParameters/LinkedChoicesFilterParameter.h"
 #include "SIMPLib/FilterParameters/DataArraySelectionFilterParameter.h"
 #include "SIMPLib/FilterParameters/DynamicTableFilterParameter.h"
+#include "SIMPLib/Geometry/ImageGeom.h"
 
 #ifdef SIMPLib_USE_PARALLEL_ALGORITHMS
   #include <tbb/parallel_for.h>
@@ -166,6 +167,7 @@ void FuseVolumes::setupFilterParameters()
 {
   FilterParameterVector parameters;
   AttributeMatrixSelectionFilterParameter::RequirementType amReq;
+  amReq = AttributeMatrixSelectionFilterParameter::CreateRequirement(DREAM3D::AttributeMatrixObjectType::Element);
   parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Reference Atrribute Matrix", "ReferenceVolume", getReferenceVolume(), FilterParameter::RequiredArray, amReq));
   parameters.push_back(AttributeMatrixSelectionFilterParameter::New("Moving Atrribute Matrix", "MovingVolume", getMovingVolume(), FilterParameter::RequiredArray, amReq));
   parameters.push_back(StringFilterParameter::New("Merged Array Prefix", "Prefix", getPrefix(), FilterParameter::Parameter));
@@ -448,14 +450,14 @@ void FuseVolumes::execute()
 #ifdef SIMPLib_USE_PARALLEL_ALGORITHMS
   if (doParallel == true)
   {
-    tbb::parallel_for(tbb::blocked_range3d<size_t, size_t, size_t>(0, refDims[2]-1, 0, refDims[1]-1, 0, refDims[0]-1),
+    tbb::parallel_for(tbb::blocked_range3d<size_t, size_t, size_t>(0, refDims[2], 0, refDims[1], 0, refDims[0]),
                       FuseVolumesImpl(movDims, refDims, movingOrigin, refOrigin, movingRes, refRes, transform, translation, refCellAttrMat, moveCellAttrMat, m_Prefix, newindicies), tbb::auto_partitioner());
   }
   else
 #endif
   {
     FuseVolumesImpl serial(movDims, refDims, movingOrigin, refOrigin, movingRes, refRes, transform, translation, refCellAttrMat, moveCellAttrMat, m_Prefix, newindicies);
-    serial.convert(0, refDims[2]-1, 0, refDims[1]-1, 0, refDims[0]-1);
+    serial.convert(0, refDims[2], 0, refDims[1], 0, refDims[0]);
   }
 
   //merge cell attribute matrix

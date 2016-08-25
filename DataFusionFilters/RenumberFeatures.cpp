@@ -57,7 +57,10 @@ void RenumberFeatures::setupFilterParameters()
 {
   FilterParameterVector parameters;
   DataArraySelectionFilterParameter::RequirementType req;
+  req = DataArraySelectionFilterParameter::CreateCategoryRequirement(DREAM3D::TypeNames::Int32, 1, DREAM3D::AttributeMatrixObjectType::Element);
   parameters.push_back(DataArraySelectionFilterParameter::New("Feature Ids", "FeatureIdsArrayPath", getFeatureIdsArrayPath(), FilterParameter::RequiredArray, req));
+  
+  req = DataArraySelectionFilterParameter::CreateCategoryRequirement(DREAM3D::Defaults::AnyPrimitive, 1, DREAM3D::AttributeMatrixObjectType::Feature);
   parameters.push_back(DataArraySelectionFilterParameter::New("Scalar Array", "ScalarArrayPath", getScalarArrayPath(), FilterParameter::RequiredArray, req));
 
   QVector<QString> choices;

@@ -98,12 +98,15 @@ void MatchFeatureIdsGeometry::setupFilterParameters()
   parameters.push_back(DoubleFilterParameter::New("Orientation Tolerance Angle (degrees)", "OrientationTolerance", getOrientationTolerance(), FilterParameter::Parameter));
 
   DataArraySelectionFilterParameter::RequirementType req;
+  req = DataArraySelectionFilterParameter::CreateCategoryRequirement(DREAM3D::TypeNames::Float, 4, DREAM3D::AttributeMatrixObjectType::Feature);
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Features Average Quats", "ReferenceQuatsArrayPath", getReferenceQuatsArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Moving Features Average Quats", "MovingQuatsArrayPath", getMovingQuatsArrayPath(), FilterParameter::RequiredArray, req));
 
+  req = DataArraySelectionFilterParameter::CreateCategoryRequirement(DREAM3D::TypeNames::Int32, 1, DREAM3D::AttributeMatrixObjectType::Feature);
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Features Phases", "ReferencePhasesArrayPath", getReferencePhasesArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Moving Features Phases", "MovingPhasesArrayPath", getMovingPhasesArrayPath(), FilterParameter::RequiredArray, req));
 
+  req = DataArraySelectionFilterParameter::CreateCategoryRequirement(DREAM3D::TypeNames::UInt32, 1, DREAM3D::AttributeMatrixObjectType::Ensemble);
   parameters.push_back(DataArraySelectionFilterParameter::New("Reference Features Crystal Structures", "ReferenceCrystalStructuresArrayPath", getReferenceCrystalStructuresArrayPath(), FilterParameter::RequiredArray, req));
   parameters.push_back(DataArraySelectionFilterParameter::New("Moving Features Crystal Structures", "MovingCrystalStructuresArrayPath", getMovingCrystalStructuresArrayPath(), FilterParameter::RequiredArray, req));
   setFilterParameters(parameters);
@@ -163,7 +166,6 @@ int MatchFeatureIdsGeometry::writeFilterParameters(AbstractFilterParametersWrite
 void MatchFeatureIdsGeometry::dataCheck()
 {
   setErrorCondition(0);
-  MatchFeatureIds::dataCheck();
 
   DataArrayPath refIdspath = getReferenceFeatureIdsArrayPath();
   DataArrayPath movIdspath = getMovingFeatureIdsArrayPath();
@@ -222,6 +224,8 @@ void MatchFeatureIdsGeometry::dataCheck()
 // -----------------------------------------------------------------------------
 void MatchFeatureIdsGeometry::preflight()
 {
+  
+  MatchFeatureIds::preflight();
   // These are the REQUIRED lines of CODE to make sure the filter behaves correctly
   setInPreflight(true); // Set the fact that we are preflighting.
   emit preflightAboutToExecute(); // Emit this signal so that other widgets can do one file update

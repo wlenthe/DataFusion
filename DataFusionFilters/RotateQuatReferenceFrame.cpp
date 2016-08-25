@@ -66,6 +66,7 @@ void RotateQuatReferenceFrame::setupFilterParameters()
 {
   FilterParameterVector parameters;
   DataArraySelectionFilterParameter::RequirementType req;
+  req = DataArraySelectionFilterParameter::CreateCategoryRequirement(DREAM3D::TypeNames::Float, 4, DREAM3D::AttributeMatrixObjectType::Feature);
   parameters.push_back(DataArraySelectionFilterParameter::New("Quats", "QuatsArrayPath", getQuatsArrayPath(), FilterParameter::RequiredArray, req));
   {
     QVector<QString> choices;
