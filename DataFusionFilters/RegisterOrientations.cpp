@@ -311,42 +311,50 @@ void RegisterOrientations::execute()
     uint32_t xtal = m_ReferenceCrystalStructures[m_ReferencePhases[sharedFeatures[i]]];//already checked that phases match
 
     //loop over symmetry operators for structure computing all possible equivilent ways of expressing rotation
-    for(int j = 0; j < symOpsList[xtal].size(); j++) {
-      QuatF tempQuat;
-      float avgMiso = 0.0f;
-      QuaternionMathF::Multiply(gMovInv, symOpsList[xtal][j], tempQuat);
-      QuaternionMathF::Multiply(tempQuat, gRef, candidateQuat);
+    if(999 != xtal) {
+      for(int j = 0; j < symOpsList[xtal].size(); j++) {
+        QuatF tempQuat;
+        float avgMiso = 0.0f;
+        QuaternionMathF::Multiply(gMovInv, symOpsList[xtal][j], tempQuat);
+        QuaternionMathF::Multiply(tempQuat, gRef, candidateQuat);
 
-      //loop over all other pairs finding the resuling misorientation if the candidate rotation is applied to each
-      for(size_t k = 0; k < sharedFeatures.size(); k++) {
-        if(k != i) {
-          QuatF otherGMovRotInv;
-          float cosMinAngle = 0.0f;
-          QuaternionMathF::Multiply(movingQuats[sharedFeatures[k]], candidateQuat, otherGMovRotInv);
-          QuaternionMathF::Conjugate(otherGMovRotInv);
-          for(size_t m = 0; m < symOpsList[xtal].size(); m++) {
-            QuatF temp, miso;
-            QuaternionMathF::Multiply(otherGMovRotInv, symOpsList[xtal][m], temp);
-            QuaternionMathF::Multiply(temp, referenceQuats[sharedFeatures[k]], miso);
-            float cosAngle = fabs(miso.w);
-            if(cosAngle > cosMinAngle) cosMinAngle = cosAngle;
+        //loop over all other pairs finding the resuling misorientation if the candidate rotation is applied to each
+        for(size_t k = 0; k < sharedFeatures.size(); k++) {
+          if(k != i) {
+            QuatF otherGMovRot;
+            float n1, n2, n3;
+            QuaternionMathF::Multiply(movingQuats[sharedFeatures[k]], candidateQuat, otherGMovRot);
+            avgMiso += m_OrientationOps[xtal]->getMisoQuat(otherGMovRot, referenceQuats[sharedFeatures[k]], n1, n2, n3);
+            /*
+            QuatF otherGMovRotInv;
+            float cosMinAngle = 0.0f;
+            QuaternionMathF::Multiply(movingQuats[sharedFeatures[k]], candidateQuat, otherGMovRotInv);
+            QuaternionMathF::Conjugate(otherGMovRotInv);
+            for(size_t m = 0; m < symOpsList[xtal].size(); m++) {
+              QuatF temp, miso;
+              QuaternionMathF::Multiply(otherGMovRotInv, symOpsList[xtal][m], temp);
+              QuaternionMathF::Multiply(temp, referenceQuats[sharedFeatures[k]], miso);
+              float cosAngle = fabs(miso.w);
+              if(cosAngle > cosMinAngle) cosMinAngle = cosAngle;
+            }
+            avgMiso += acos(std::min(cosMinAngle, 1.0f));
+            */
           }
-          avgMiso += acos(std::min(cosMinAngle, 1.0f));
+        }
+        avgMiso /= static_cast<float>(sharedFeatures.size() - 1);
+
+        if(avgMiso < minAvgMiso) {
+          minAvgMiso = avgMiso;
+          QuaternionMathF::Copy(candidateQuat, bestQuat);
         }
       }
-      avgMiso /= static_cast<float>(sharedFeatures.size() - 1);
 
-      if(avgMiso < minAvgMiso) {
-        minAvgMiso = avgMiso;
-        QuaternionMathF::Copy(candidateQuat, bestQuat);
+      //convert the average misorientation of the best match to degrees and add best match to list of matches
+      if(bestQuat.w < 0) QuaternionMathF::Negate(bestQuat);//only consider rotations 0-180
+      if(minAvgMiso < minMisoAngle) {
+        QuaternionMathF::Add(rotation, bestQuat, rotation);
+        matchCount++;
       }
-    }
-
-    //convert the average misorientation of the best match to degrees and add best match to list of matches
-    if(bestQuat.w < 0) QuaternionMathF::Negate(bestQuat);//only consider rotations 0-180
-    if(2.0f * minAvgMiso < minMisoAngle) {
-      QuaternionMathF::Add(rotation, bestQuat, rotation);
-      matchCount++;
     }
   }
 
@@ -359,10 +367,17 @@ void RegisterOrientations::execute()
   QuaternionMathF::UnitQuaternion(rotation);//for cubochoric divide by matchCount
   
   float s = std::sin(std::acos(rotation.w));
-  m_Transform[0] = rotation.x / s;
-  m_Transform[1] = rotation.y / s;
-  m_Transform[2] = rotation.z / s;
-  m_Transform[3] = 2 * std::acos(rotation.w);
+  if(s == 0.0f) {
+    m_Transform[0] = 0.0f;
+    m_Transform[1] = 0.0f;
+    m_Transform[2] = 1.0f;
+    m_Transform[3] = 0.0f;
+  } else {
+    m_Transform[0] = rotation.x / s;
+    m_Transform[1] = rotation.y / s;
+    m_Transform[2] = rotation.z / s;
+    m_Transform[3] = 2 * std::acos(rotation.w);
+  }
 
   if(getApplyTransformation()) {
     for(int i = 0; i < movingNumFeatures; i++) {

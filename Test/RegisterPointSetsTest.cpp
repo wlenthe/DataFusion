@@ -30,6 +30,7 @@
 #include "SIMPLib/Plugin/SIMPLibPluginLoader.h"
 #include "SIMPLib/Utilities/UnitTestSupport.hpp"
 #include "SIMPLib/Utilities/QMetaObjectUtilities.h"
+#include "SIMPLib/Geometry/ImageGeom.h"
 
 #include "DataFusionTestFileLocations.h"
 
@@ -210,7 +211,7 @@ int RegisterPointSetsTest()
     float* shrTransform = pShearing->getPointer(0);
 
     //compare row at a time
-    for(size_t i = 0; i < 3; i++) {
+	for (size_t i = 0; i < 3; i++) {
       DREAM3D_COMPARE_FLOATS(rotation[3 * i + 0], rotTransform[4 * i + 0], 1)
       DREAM3D_COMPARE_FLOATS(rotation[3 * i + 1], rotTransform[4 * i + 1], 1)
       DREAM3D_COMPARE_FLOATS(rotation[3 * i + 2], rotTransform[4 * i + 2], 1)

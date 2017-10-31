@@ -180,7 +180,7 @@ void RotateQuatReferenceFrame::execute()
     } break;
 
     case 1: {
-      float angle = getAngle() * std::acos(0) / 1800.0f;//angle/2
+      float angle = getAngle() * std::acos(0) / 180.0f;//angle/2
       float mag = std::sqrt(getAxis().x * getAxis().x + getAxis().y * getAxis().y + getAxis().z * getAxis().z);
       rotation.w = std::cos(angle);
       rotation.x = std::sin(angle) / mag;

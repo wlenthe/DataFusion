@@ -215,11 +215,11 @@ void MatchFeatureIds::execute()
   }
 
   //push unmatched moving grains above highest reference id
-  int originalMovingSize = m_MovingUniquePtr.lock()->getNumberOfTuples();
-  int newMovingSize = m_ReferenceUniquePtr.lock()->getNumberOfTuples();
+  int originalMovingSize = maxMovingId;
+  maxMovingId = maxReferenceId;
   for(size_t i = 1; i < originalMovingSize; i++) {
     if(-1 == idMap[i]) {
-      idMap[i] = newMovingSize++;
+      idMap[i] = maxMovingId++;
     }
   }
 
@@ -230,7 +230,7 @@ void MatchFeatureIds::execute()
   }
 
   //resize and rearrange moving feature attribute arrays
-  QVector<size_t> tDims(1, newMovingSize);
+  QVector<size_t> tDims(1, maxMovingId);
   DataContainer::Pointer m = getDataContainerArray()->getDataContainer(getMovingCellFeatureAttributeMatrixPath().getDataContainerName());
   AttributeMatrix::Pointer cellFeatureAttrMat = m->getAttributeMatrix(getMovingCellFeatureAttributeMatrixPath().getAttributeMatrixName());
   cellFeatureAttrMat->setTupleDimensions(tDims);

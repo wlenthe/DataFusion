@@ -30,6 +30,8 @@
 #include "SIMPLib/Plugin/SIMPLibPluginLoader.h"
 #include "SIMPLib/Utilities/UnitTestSupport.hpp"
 #include "SIMPLib/Utilities/QMetaObjectUtilities.h"
+#include "SIMPLib/Geometry/ImageGeom.h"
+#include "EBSDLib/EbsdConstants.h"
 
 #include "SIMPLib/Math/QuaternionMath.hpp"
 #include "OrientationLib/OrientationMath/OrientationConverter.hpp"

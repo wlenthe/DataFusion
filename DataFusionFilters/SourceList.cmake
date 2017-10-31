@@ -29,12 +29,16 @@ START_FILTER_GROUP(${DataFusion_BINARY_DIR} "${_filterGroupName}" "DataFusion")
 # List your public filters here
 set(_PublicFilters
   FuseVolumes
+  # FuseVolumesPoly
   MatchFeatureIdsManual
   MatchFeatureIdsGeometry
+  MatchFeatureIdsNeighborMisorientation
   RegisterOrientations
   RegisterPointSets
+  # RegisterPointSetsPoly
   RenumberFeatures
-
+  FuseDatasets
+  RotateQuatReferenceFrame
 )
 
 
